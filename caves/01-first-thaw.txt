@@ -1,0 +1,32 @@
+name: First Thaw
+about: the ice has gone and left its rubble; dig in
+value: 10 15
+quota: 15 18 21 24 27
+time: 150 140 130 120 110
+seed: 23 71 118 164 209
+fill: boulder 40, diamond 9
+magic: 25
+amoeba: 45
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W::::..................................W
+W:P::..................................W
+W::::...................wwwwwwwww......W
+W......r................wrrrrrrrw......W
+W......w................::::::::w......W
+W.......wr..............w       w......W
+W........w..............w   b   w......W
+W.........wr............w       w......W
+W..........w............wwwwwwwww......W
+W...........w..........................W
+W.............rrrrrr...................W
+W.............::::::..........r........W
+W............wmmmmmmw......www:www.....W
+W.wwwwwwwww..w      w......w:::::w.....W
+W.wf      :..w      :......w:a:::w.....W
+W.w wwwww :..wwwwwwww......w:::::w.....W
+W.w wwwww :................wwwwwww.....W
+W.w       :............................W
+W.wwwwwwwww............................X
+W......................................W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
