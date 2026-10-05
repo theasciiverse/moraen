@@ -10,8 +10,8 @@ Not a clone.
 **Status:** build step 1 done (2026-10-05): the BD1 engine with every BD1 element,
 34 `cargo test`s of its rules, the glyph renderer, keyboard and gamepad input, session
 logging, and one cave of our own (`caves/01-first-thaw.txt`) played through the five
-difficulty levels. Proposals below approved by David on 2026-10-05. Local git repo,
-not yet pushed.
+difficulty levels. Proposals below approved by David on 2026-10-05. Own git repo,
+private at github.com/theasciiverse/moraen.
 
 ```bash
 cargo run --release                       # play (--level 1-5)
@@ -240,7 +240,7 @@ pad becoming its own player comes with co-op.
 - [x] TMview trademark search for Moraen: clear
 - [x] Folder renamed `rockford` to `moraen`
 - [x] David approves the proposals above (2026-10-05)
-- [ ] Push to `theasciiverse/moraen` (private)
+- [x] Pushed to `theasciiverse/moraen` (private, 2026-10-05)
 - [ ] Our hero: look and idle animation
 - [ ] Vet the 25 public-domain Boulder levels before using any
 - [ ] Promote CAVEZ of PHEAR to the catalog
