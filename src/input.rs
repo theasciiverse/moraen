@@ -68,6 +68,9 @@ pub struct Input {
     pub quit: bool,
     pub back: bool,
     pub pause: bool,
+    /// Zoom steps asked for (`+` in, `-` out), and `0` for automatic.
+    pub zoom: i32,
+    pub zoom_auto: bool,
     #[cfg(feature = "gamepad")]
     gilrs: Option<gilrs::Gilrs>,
 }
@@ -115,6 +118,8 @@ impl Input {
             quit: false,
             back: false,
             pause: false,
+            zoom: 0,
+            zoom_auto: false,
             #[cfg(feature = "gamepad")]
             gilrs,
         }
@@ -165,6 +170,9 @@ impl Input {
             }
             KeyCode::Esc if press => self.back = true,
             KeyCode::Char('p' | 'P') if press => self.pause = true,
+            KeyCode::Char('+' | '=') if press => self.zoom += 1,
+            KeyCode::Char('-') if press => self.zoom -= 1,
+            KeyCode::Char('0') if press => self.zoom_auto = true,
             _ => {}
         }
     }

@@ -246,6 +246,8 @@ pub struct World {
     /// Where the player is, if in the grid.
     pub player: Option<usize>,
     pub facing: Dir,
+    /// The player walked this tick (for the walking animation).
+    pub moved: bool,
     born: bool,
     /// Ticks since the player was last seen in the grid.
     pub unseen: u32,
@@ -316,6 +318,7 @@ impl World {
             amoeba_could_grow_last: true,
             player: None,
             facing: Dir::Right,
+            moved: false,
             born: false,
             unseen: 0,
             flash: 0,
@@ -362,6 +365,7 @@ impl World {
             return;
         }
         self.flash = self.flash.saturating_sub(1);
+        self.moved = false;
         // the amoeba's fate is decided from last tick's count
         let amoeba_to = if self.amoeba_count_last >= self.amoeba_threshold {
             Some(El::Boulder)
@@ -527,6 +531,7 @@ impl World {
         self.cells[from] = El::Space;
         self.put(to, El::Player);
         self.player = Some(to);
+        self.moved = true;
     }
 
     fn collect(&mut self) {

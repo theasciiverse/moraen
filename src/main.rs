@@ -2,20 +2,25 @@
 //! comes down on you. A spiritual successor to the 1984 cave-digging classic, with
 //! its engine rebuilt faithfully and everything you see our own.
 //!
-//! Run: `cargo run --release [-- --level 1-5]` (`RUST_LOG=debug cargo run --release
-//! 2>moraen.log` for a session log). Without a terminal: `cargo run -- --frame N
-//! [--moves RRDD..] [--level L] [--size 80x24]` plays N ticks (moves `U D L R`, `.`
-//! to wait, lowercase to snap) and prints the screen as text.
+//! Run: `cargo run --release [-- --level 1-5] [--zoom g|4|6|8|12|16|18|24]`
+//! (`RUST_LOG=debug cargo run --release 2>moraen.log` for a session log). Pixel mode
+//! (half-blocks, after uXo) when the whole cave fits, glyph mode when not; `+`/`-`
+//! change it, `0` back to automatic. Without a terminal: `cargo run -- --frame N
+//! [--moves RRDD..] [--level L] [--size 80x24] [--zoom Z] [--ppm out.ppm]` plays N
+//! ticks (moves `U D L R`, `.` to wait, lowercase to snap) and prints the screen as
+//! text, or writes it as an image (one pixel per half-block).
 
 mod cave;
 mod engine;
 mod glyph;
 mod input;
+mod pixel;
 
 use cave::Cave;
 use engine::{Cmd, Dir, Event, Phase, World};
 use glyph::Camera;
 use input::Input;
+use pixel::Zoom;
 use log::{debug, info};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{self, Event as TermEvent, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
@@ -41,11 +46,12 @@ fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let arg = |name: &str| args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).map(String::as_str);
     let level = arg("--level").and_then(|v| v.parse().ok()).unwrap_or(1u32).clamp(1, 5);
+    let zoom = arg("--zoom").and_then(Zoom::parse);
     if let Some(n) = arg("--frame") {
         let size = arg("--size").and_then(|s| s.split_once('x')).and_then(|(w, h)| Some((w.parse().ok()?, h.parse().ok()?)));
-        return frame_dump(n.parse().unwrap_or(0), arg("--moves").unwrap_or(""), level, size.unwrap_or((80, 24)));
+        return frame_dump(n.parse().unwrap_or(0), arg("--moves").unwrap_or(""), level, size.unwrap_or((80, 24)), zoom, arg("--ppm"));
     }
-    run(level)
+    run(level, zoom)
 }
 
 fn seed() -> u64 {
@@ -70,6 +76,12 @@ struct Session {
     world: World,
     state: State,
     cam: Camera,
+    /// A size picked with `+`/`-`; `None` fits the whole cave.
+    zoom: Option<Zoom>,
+    /// Pixel mode's view, its top-left in cave pixels, eased toward the hero.
+    pcam: (f32, f32),
+    snap_cam: bool,
+    frames: u64,
     curtain: Vec<bool>,
     curtain_round: u32,
     curtain_rng: engine::Rng,
@@ -92,6 +104,10 @@ impl Session {
             world,
             state: State::Playing,
             cam: Camera::default(),
+            zoom: None,
+            pcam: (0.0, 0.0),
+            snap_cam: true,
+            frames: 0,
             curtain: vec![true; n],
             curtain_round: 0,
             curtain_rng: engine::Rng::new(seed ^ 0xC0FFEE),
@@ -109,6 +125,7 @@ impl Session {
         self.world.score = self.score;
         self.curtain = vec![true; self.world.cells.len()];
         self.curtain_round = 0;
+        self.snap_cam = true;
         self.state = State::Playing;
         self.acc_ms = 0.0;
         info!("cave {:?} level {} start: lives {}, score {}, quota {}, time {}", self.cave.name, self.level, self.lives, self.score, self.world.quota, self.world.time_left);
@@ -199,7 +216,9 @@ impl Session {
         match self.state {
             State::GameOver => {
                 if pressed {
+                    let zoom = self.zoom;
                     *self = Session::new(1, seed());
+                    self.zoom = zoom;
                 }
                 return;
             }
@@ -232,15 +251,31 @@ impl Session {
         if area.height < 3 || area.width < 20 {
             return;
         }
-        let w = &self.world;
-        let view_w = (area.width as usize / 2).min(w.w);
-        let view_h = (area.height as usize - 2).min(w.h);
-        self.cam.follow(w, view_w, view_h);
-        let x0 = area.x + (area.width - (view_w * 2) as u16) / 2;
-        let y0 = area.y + 1 + ((area.height - 2) - view_h as u16) / 2;
-        let cave_area = Rect::new(x0, y0, (view_w * 2) as u16, view_h as u16);
+        self.frames += 1;
+        let (room_w, room_h) = (area.width as usize, area.height as usize - 2);
+        let zoom = self.zoom.unwrap_or_else(|| Zoom::fit(self.world.w, self.world.h, room_w, room_h));
         let covered = (self.curtain_round <= CURTAIN_ROUNDS).then_some(self.curtain.as_slice());
-        glyph::draw(w, self.cam, cave_area, covered, buf);
+        let cave_area = if zoom == Zoom::GLYPH {
+            let w = &self.world;
+            let view_w = (room_w / 2).min(w.w);
+            let view_h = room_h.min(w.h);
+            self.cam.follow(w, view_w, view_h);
+            let r = centred(area, (view_w * 2) as u16, view_h as u16);
+            glyph::draw(w, self.cam, r, covered, buf);
+            r
+        } else {
+            let px = zoom.px();
+            let (cave_w, cave_h) = (self.world.w as i32 * px, self.world.h as i32 * px);
+            let view_w = (room_w as i32).min(cave_w);
+            let view_h = (room_h as i32).min((cave_h + 1) / 2);
+            let r = centred(area, view_w as u16, view_h as u16);
+            let cam = self.pixel_camera(px, (cave_w, cave_h), (view_w, view_h * 2));
+            let covered = (self.curtain_round <= CURTAIN_ROUNDS).then_some(self.curtain.as_slice());
+            pixel::draw(&self.world, zoom, cam, r, covered, self.frames, buf);
+            r
+        };
+        let w = &self.world;
+        let (x0, y0, view_h) = (cave_area.x, cave_area.y, cave_area.height as usize);
 
         // the HUD, above the cave
         let hud_y = y0 - 1;
@@ -282,11 +317,49 @@ impl Session {
             (_, Phase::Dead) if w.can_retry() => Some(("press any key".into(), amber)),
             _ => self.toast.as_ref().map(|(t, _)| (t.clone(), amber)),
         };
-        let line = msg.unwrap_or_else(|| ("arrows/WASD dig   Shift+dir or Space snap   P pause   Esc quit".into(), dim));
+        let line = msg.unwrap_or_else(|| ("arrows/WASD dig   Shift+dir or Space snap   +/- zoom   P pause   Esc quit".into(), dim));
         let lx = x0 + cave_area.width.saturating_sub(line.0.chars().count() as u16) / 2;
         if msg_y < area.y + area.height {
             buf.set_string(lx.max(area.x), msg_y, &line.0, line.1);
         }
+    }
+
+    /// Keep the hero inside a dead zone in the middle of the view, easing there; a
+    /// cave smaller than the view sits still.
+    fn pixel_camera(&mut self, px: i32, (cw, ch): (i32, i32), (vw, vh): (i32, i32)) -> (i32, i32) {
+        let (mut tx, mut ty) = self.pcam;
+        if let Some(p) = self.world.player {
+            let (hx, hy) = ((p % self.world.w) as i32 * px + px / 2, (p / self.world.w) as i32 * px + px / 2);
+            let axis = |cam: &mut f32, pos: i32, view: i32| {
+                let margin = view / 4;
+                if (pos as f32) < *cam + margin as f32 {
+                    *cam = (pos - margin) as f32;
+                } else if (pos as f32) > *cam + (view - margin) as f32 {
+                    *cam = (pos - view + margin) as f32;
+                }
+            };
+            if self.snap_cam {
+                // a new cave starts centred on the hero (or the inbox)
+                (tx, ty) = ((hx - vw / 2) as f32, (hy - vh / 2) as f32);
+            } else {
+                axis(&mut tx, hx, vw);
+                axis(&mut ty, hy, vh);
+            }
+        } else if self.snap_cam {
+            let inbox = self.world.cells.iter().position(|&e| e == engine::El::Inbox).unwrap_or(0);
+            let (ix, iy) = ((inbox % self.world.w) as i32 * px, (inbox / self.world.w) as i32 * px);
+            (tx, ty) = ((ix - vw / 2) as f32, (iy - vh / 2) as f32);
+        }
+        tx = tx.clamp(0.0, (cw - vw).max(0) as f32);
+        ty = ty.clamp(0.0, (ch - vh).max(0) as f32);
+        if self.snap_cam {
+            self.pcam = (tx, ty);
+            self.snap_cam = self.world.player.is_none() && self.world.phase == Phase::Hatching;
+        } else {
+            self.pcam.0 += (tx - self.pcam.0) * 0.2;
+            self.pcam.1 += (ty - self.pcam.1) * 0.2;
+        }
+        (self.pcam.0.round() as i32, self.pcam.1.round() as i32)
     }
 
     fn snapshot_log(&self) {
@@ -310,7 +383,14 @@ impl Session {
     }
 }
 
-fn run(level: u32) -> io::Result<()> {
+/// A `w` x `h` rectangle centred in `area`, one row in from the top for the HUD.
+fn centred(area: Rect, w: u16, h: u16) -> Rect {
+    let x = area.x + area.width.saturating_sub(w) / 2;
+    let y = area.y + 1 + (area.height - 2).saturating_sub(h) / 2;
+    Rect::new(x, y, w.min(area.width), h.min(area.height - 2))
+}
+
+fn run(level: u32, zoom: Option<Zoom>) -> io::Result<()> {
     let mut terminal = ratatui::init();
     let kitty = supports_keyboard_enhancement().unwrap_or(false);
     if kitty {
@@ -320,6 +400,7 @@ fn run(level: u32) -> io::Result<()> {
     info!("start: kitty keyboard = {kitty}, level {level}");
     let mut input = Input::new(kitty);
     let mut session = Session::new(level, seed());
+    session.zoom = zoom;
     let mut last = Instant::now();
     let mut last_log = Instant::now();
 
@@ -338,6 +419,18 @@ fn run(level: u32) -> io::Result<()> {
             session.paused = !session.paused;
             input.pressed = false;
             info!("{}", if session.paused { "paused" } else { "resumed" });
+        }
+        if input.zoom != 0 || std::mem::take(&mut input.zoom_auto) {
+            session.zoom = if input.zoom == 0 {
+                None
+            } else {
+                let size = terminal.size()?;
+                let now = session.zoom.unwrap_or_else(|| Zoom::fit(session.world.w, session.world.h, size.width as usize, size.height as usize - 2));
+                Some(now.step(input.zoom))
+            };
+            input.zoom = 0;
+            session.snap_cam = true;
+            info!("zoom {}", session.zoom.map_or("auto".into(), |z| z.name()));
         }
         let now = Instant::now();
         let dt = now.duration_since(last);
@@ -360,8 +453,9 @@ fn run(level: u32) -> io::Result<()> {
 }
 
 /// Play `n` ticks headless and print the screen as plain text.
-fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16)) -> io::Result<()> {
+fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16), zoom: Option<Zoom>, ppm: Option<&str>) -> io::Result<()> {
     let mut s = Session::new(level, 1);
+    s.zoom = zoom;
     s.curtain_round = CURTAIN_ROUNDS + 1;
     let mut moves = moves.chars();
     for _ in 0..n {
@@ -385,6 +479,29 @@ fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16)) -> io::Result
     let area = Rect::new(0, 0, w, h);
     let mut buf = Buffer::empty(area);
     s.draw(area, &mut buf);
+    if let Some(path) = ppm {
+        // one pixel per half-block: a cell is the top and bottom pixel
+        let rgb = |c: Color| match c {
+            Color::Rgb(r, g, b) => [r, g, b],
+            Color::Reset | Color::Black => [0, 0, 0],
+            _ => [200, 200, 200],
+        };
+        let mut out = format!("P6\n{w} {}\n255\n", h * 2).into_bytes();
+        for y in 0..h * 2 {
+            for x in 0..w {
+                let cell = &buf[(x, y / 2)];
+                let c = if cell.symbol() == "▀" {
+                    if y % 2 == 0 { rgb(cell.fg) } else { rgb(cell.bg) }
+                } else if cell.symbol().trim().is_empty() {
+                    rgb(cell.bg)
+                } else {
+                    rgb(cell.fg)
+                };
+                out.extend_from_slice(&c);
+            }
+        }
+        return std::fs::write(path, out);
+    }
     for y in 0..h {
         let line: String = (0..w).map(|x| buf[(x, y)].symbol().to_string()).collect();
         println!("{}", line.trim_end());

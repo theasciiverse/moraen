@@ -17,11 +17,12 @@ not yet pushed.
 cargo run --release                       # play (--level 1-5)
 RUST_LOG=debug cargo run --release 2>moraen.log
 cargo run -- --frame 60 --moves ..RRDD    # headless: N ticks, print the screen
+cargo run -- --frame 60 --size 320x75 --ppm out.ppm   # ... or save it as an image
 cargo test
 ```
 
 Code: `src/engine.rs` (the tick, all rules, tests), `src/cave.rs` (cave format),
-`src/glyph.rs` (glyph mode), `src/input.rs`, `src/main.rs` (session: lives, score,
+`src/glyph.rs` (glyph mode), `src/pixel.rs` (pixel mode), `src/input.rs`, `src/main.rs` (session: lives, score,
 levels, HUD).
 
 ## Name
@@ -186,8 +187,17 @@ one inbox and an exit.
 
 ## Rendering
 
-uXo's half-block renderer (`uxo/src/render.rs`): `▀` cells, two square pixels per
-cell, hand-drawn art at 4, 6 and 8 pixels per tile and whole-number upscales.
+Two renderers, both kept (David, 2026-10-05):
+
+**Pixel mode** (built, `src/pixel.rs`), after uXo's renderer: `▀` cells, two square
+pixels per cell, hand-drawn art at 4, 6 and 8 pixels per tile and whole-number
+upscales (12, 16, 18, 24). Riveted steel, running-bond brick (an active magic wall
+glows through its mortar), shaded boulders, faceted diamonds with a glint, gritty
+till, a seething amoeba, a firefly ember with a spark running round its rim, a
+flapping butterfly, fire and ice blasts. Auto zoom picks the biggest size that
+shows the whole cave, glyphs when none does; `+`/`-` step through glyphs and every
+pixel size, `0` goes back to auto; a pixel camera eases after the hero with a dead
+zone.
 
 - At 6 pixels a whole 40x22 cave is 240x66 cells: on David's full-screen terminal
   (about 320x75) **the whole cave fits with room for the HUD, no scrolling**. At 8
@@ -217,7 +227,8 @@ pad becoming its own player comes with co-op.
 1. **Engine** (done 2026-10-05): the BD1 element set, tick scan, timings;
    `cargo test` with scripted input against known behaviours; glyph renderer; one
    test cave.
-2. **Look and feel**: half-block art at 4, 6, 8, the hero, HUD, sound.
+2. **Look and feel**: half-block art at 4, 6, 8 (first pass done 2026-10-05), the
+   hero, a pixel-font HUD, sound.
 3. **First world**: 16 caves plus intermissions, difficulty levels, title and
    results screens.
 4. **Import** (BDCFF, `.bd`, R'n'D) and the editor.
