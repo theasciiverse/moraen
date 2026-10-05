@@ -15,6 +15,7 @@ private at github.com/theasciiverse/moraen.
 
 ```bash
 cargo run --release                       # play (--level 1-5)
+cargo run --release -- --glyphs           # character graphics (--pixels: half-blocks)
 RUST_LOG=debug cargo run --release 2>moraen.log
 cargo run -- --frame 60 --moves ..RRDD    # headless: N ticks, print the screen
 cargo run -- --frame 60 --size 320x75 --ppm out.ppm   # ... or save it as an image
@@ -197,7 +198,8 @@ till, a seething amoeba, a firefly ember with a spark running round its rim, a
 flapping butterfly, fire and ice blasts. Auto zoom picks the biggest size that
 shows the whole cave, glyphs when none does; `+`/`-` step through glyphs and every
 pixel size, `0` goes back to auto; a pixel camera eases after the hero with a dead
-zone.
+zone. Graphics switch: `--glyphs` or `--pixels` on the command line (default: auto),
+`G` in the game flips between them.
 
 - At 6 pixels a whole 40x22 cave is 240x66 cells: on David's full-screen terminal
   (about 320x75) **the whole cave fits with room for the HUD, no scrolling**. At 8

@@ -2,10 +2,12 @@
 //! comes down on you. A spiritual successor to the 1984 cave-digging classic, with
 //! its engine rebuilt faithfully and everything you see our own.
 //!
-//! Run: `cargo run --release [-- --level 1-5] [--zoom g|4|6|8|12|16|18|24]`
-//! (`RUST_LOG=debug cargo run --release 2>moraen.log` for a session log). Pixel mode
-//! (half-blocks, after uXo) when the whole cave fits, glyph mode when not; `+`/`-`
-//! change it, `0` back to automatic. Without a terminal: `cargo run -- --frame N
+//! Run: `cargo run --release [-- --level 1-5] [--glyphs | --pixels]
+//! [--zoom g|4|6|8|12|16|18|24]` (`RUST_LOG=debug cargo run --release 2>moraen.log`
+//! for a session log). Graphics: `--glyphs` for characters, `--pixels` for
+//! half-blocks (after uXo); without either, half-blocks when the whole cave fits and
+//! characters when not. In the game `G` switches between the two, `+`/`-` change the
+//! size, `0` goes back to automatic. Without a terminal: `cargo run -- --frame N
 //! [--moves RRDD..] [--level L] [--size 80x24] [--zoom Z] [--ppm out.ppm]` plays N
 //! ticks (moves `U D L R`, `.` to wait, lowercase to snap) and prints the screen as
 //! text, or writes it as an image (one pixel per half-block).
@@ -46,16 +48,38 @@ fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let arg = |name: &str| args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).map(String::as_str);
     let level = arg("--level").and_then(|v| v.parse().ok()).unwrap_or(1u32).clamp(1, 5);
-    let zoom = arg("--zoom").and_then(Zoom::parse);
+    let flag = |name: &str| args.iter().any(|a| a == name);
+    let mut gfx = if flag("--glyphs") {
+        Gfx::Glyphs
+    } else if flag("--pixels") {
+        Gfx::Pixels
+    } else {
+        Gfx::Auto
+    };
+    let mut zoom = None;
+    match arg("--zoom").and_then(Zoom::parse) {
+        Some(Zoom::GLYPH) => gfx = Gfx::Glyphs,
+        Some(z) => (gfx, zoom) = (Gfx::Pixels, Some(z)),
+        None => {}
+    }
     if let Some(n) = arg("--frame") {
         let size = arg("--size").and_then(|s| s.split_once('x')).and_then(|(w, h)| Some((w.parse().ok()?, h.parse().ok()?)));
-        return frame_dump(n.parse().unwrap_or(0), arg("--moves").unwrap_or(""), level, size.unwrap_or((80, 24)), zoom, arg("--ppm"));
+        return frame_dump(n.parse().unwrap_or(0), arg("--moves").unwrap_or(""), level, size.unwrap_or((80, 24)), (gfx, zoom), arg("--ppm"));
     }
-    run(level, zoom)
+    run(level, (gfx, zoom))
 }
 
 fn seed() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(1, |d| d.as_nanos() as u64)
+}
+
+/// Character or half-block graphics.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Gfx {
+    /// Half-blocks when the whole cave fits, characters when not.
+    Auto,
+    Glyphs,
+    Pixels,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -76,7 +100,8 @@ struct Session {
     world: World,
     state: State,
     cam: Camera,
-    /// A size picked with `+`/`-`; `None` fits the whole cave.
+    gfx: Gfx,
+    /// A half-block size picked with `+`/`-`; `None` fits the whole cave.
     zoom: Option<Zoom>,
     /// Pixel mode's view, its top-left in cave pixels, eased toward the hero.
     pcam: (f32, f32),
@@ -104,6 +129,7 @@ impl Session {
             world,
             state: State::Playing,
             cam: Camera::default(),
+            gfx: Gfx::Auto,
             zoom: None,
             pcam: (0.0, 0.0),
             snap_cam: true,
@@ -216,9 +242,9 @@ impl Session {
         match self.state {
             State::GameOver => {
                 if pressed {
-                    let zoom = self.zoom;
+                    let (gfx, zoom) = (self.gfx, self.zoom);
                     *self = Session::new(1, seed());
-                    self.zoom = zoom;
+                    (self.gfx, self.zoom) = (gfx, zoom);
                 }
                 return;
             }
@@ -253,7 +279,7 @@ impl Session {
         }
         self.frames += 1;
         let (room_w, room_h) = (area.width as usize, area.height as usize - 2);
-        let zoom = self.zoom.unwrap_or_else(|| Zoom::fit(self.world.w, self.world.h, room_w, room_h));
+        let zoom = self.zoom_for(room_w, room_h);
         let covered = (self.curtain_round <= CURTAIN_ROUNDS).then_some(self.curtain.as_slice());
         let cave_area = if zoom == Zoom::GLYPH {
             let w = &self.world;
@@ -317,11 +343,39 @@ impl Session {
             (_, Phase::Dead) if w.can_retry() => Some(("press any key".into(), amber)),
             _ => self.toast.as_ref().map(|(t, _)| (t.clone(), amber)),
         };
-        let line = msg.unwrap_or_else(|| ("arrows/WASD dig   Shift+dir or Space snap   +/- zoom   P pause   Esc quit".into(), dim));
+        let line = msg.unwrap_or_else(|| ("arrows/WASD dig   Shift+dir or Space snap   G graphics   +/- zoom   P pause   Esc quit".into(), dim));
         let lx = x0 + cave_area.width.saturating_sub(line.0.chars().count() as u16) / 2;
         if msg_y < area.y + area.height {
             buf.set_string(lx.max(area.x), msg_y, &line.0, line.1);
         }
+    }
+
+    /// The size to draw at in a view of `w` x `h` cells.
+    fn zoom_for(&self, w: usize, h: usize) -> Zoom {
+        let (cw, ch) = (self.world.w, self.world.h);
+        match self.gfx {
+            Gfx::Glyphs => Zoom::GLYPH,
+            Gfx::Pixels => self.zoom.unwrap_or_else(|| Zoom::fit_pixels(cw, ch, w, h)),
+            Gfx::Auto => self.zoom.unwrap_or_else(|| Zoom::fit(cw, ch, w, h)),
+        }
+    }
+
+    /// `G`: characters to half-blocks (at the fitting size) and back.
+    fn toggle_gfx(&mut self, w: usize, h: usize) {
+        self.gfx = if self.zoom_for(w, h) == Zoom::GLYPH { Gfx::Pixels } else { Gfx::Glyphs };
+        self.zoom = None;
+        self.snap_cam = true;
+        info!("graphics {:?}", self.gfx);
+    }
+
+    /// `+`/`-`: step the size; stepping below 4 px is characters.
+    fn step_zoom(&mut self, by: i32, w: usize, h: usize) {
+        match self.zoom_for(w, h).step(by) {
+            Zoom::GLYPH => (self.gfx, self.zoom) = (Gfx::Glyphs, None),
+            z => (self.gfx, self.zoom) = (Gfx::Pixels, Some(z)),
+        }
+        self.snap_cam = true;
+        info!("graphics {:?} zoom {}", self.gfx, self.zoom.map_or("fit".into(), |z| z.name()));
     }
 
     /// Keep the hero inside a dead zone in the middle of the view, easing there; a
@@ -390,7 +444,7 @@ fn centred(area: Rect, w: u16, h: u16) -> Rect {
     Rect::new(x, y, w.min(area.width), h.min(area.height - 2))
 }
 
-fn run(level: u32, zoom: Option<Zoom>) -> io::Result<()> {
+fn run(level: u32, (gfx, zoom): (Gfx, Option<Zoom>)) -> io::Result<()> {
     let mut terminal = ratatui::init();
     let kitty = supports_keyboard_enhancement().unwrap_or(false);
     if kitty {
@@ -400,7 +454,7 @@ fn run(level: u32, zoom: Option<Zoom>) -> io::Result<()> {
     info!("start: kitty keyboard = {kitty}, level {level}");
     let mut input = Input::new(kitty);
     let mut session = Session::new(level, seed());
-    session.zoom = zoom;
+    (session.gfx, session.zoom) = (gfx, zoom);
     let mut last = Instant::now();
     let mut last_log = Instant::now();
 
@@ -420,17 +474,18 @@ fn run(level: u32, zoom: Option<Zoom>) -> io::Result<()> {
             input.pressed = false;
             info!("{}", if session.paused { "paused" } else { "resumed" });
         }
-        if input.zoom != 0 || std::mem::take(&mut input.zoom_auto) {
-            session.zoom = if input.zoom == 0 {
-                None
-            } else {
-                let size = terminal.size()?;
-                let now = session.zoom.unwrap_or_else(|| Zoom::fit(session.world.w, session.world.h, size.width as usize, size.height as usize - 2));
-                Some(now.step(input.zoom))
-            };
-            input.zoom = 0;
+        let size = terminal.size()?;
+        let room = (size.width as usize, (size.height as usize).saturating_sub(2));
+        if std::mem::take(&mut input.zoom_auto) {
+            (session.gfx, session.zoom) = (Gfx::Auto, None);
             session.snap_cam = true;
-            info!("zoom {}", session.zoom.map_or("auto".into(), |z| z.name()));
+            info!("graphics auto");
+        }
+        if std::mem::take(&mut input.toggle_gfx) {
+            session.toggle_gfx(room.0, room.1);
+        }
+        if input.zoom != 0 {
+            session.step_zoom(std::mem::take(&mut input.zoom), room.0, room.1);
         }
         let now = Instant::now();
         let dt = now.duration_since(last);
@@ -453,9 +508,9 @@ fn run(level: u32, zoom: Option<Zoom>) -> io::Result<()> {
 }
 
 /// Play `n` ticks headless and print the screen as plain text.
-fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16), zoom: Option<Zoom>, ppm: Option<&str>) -> io::Result<()> {
+fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16), (gfx, zoom): (Gfx, Option<Zoom>), ppm: Option<&str>) -> io::Result<()> {
     let mut s = Session::new(level, 1);
-    s.zoom = zoom;
+    (s.gfx, s.zoom) = (gfx, zoom);
     s.curtain_round = CURTAIN_ROUNDS + 1;
     let mut moves = moves.chars();
     for _ in 0..n {

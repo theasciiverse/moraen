@@ -71,6 +71,8 @@ pub struct Input {
     /// Zoom steps asked for (`+` in, `-` out), and `0` for automatic.
     pub zoom: i32,
     pub zoom_auto: bool,
+    /// `G`: switch between character and half-block graphics.
+    pub toggle_gfx: bool,
     #[cfg(feature = "gamepad")]
     gilrs: Option<gilrs::Gilrs>,
 }
@@ -120,6 +122,7 @@ impl Input {
             pause: false,
             zoom: 0,
             zoom_auto: false,
+            toggle_gfx: false,
             #[cfg(feature = "gamepad")]
             gilrs,
         }
@@ -173,6 +176,7 @@ impl Input {
             KeyCode::Char('+' | '=') if press => self.zoom += 1,
             KeyCode::Char('-') if press => self.zoom -= 1,
             KeyCode::Char('0') if press => self.zoom_auto = true,
+            KeyCode::Char('g' | 'G') if press => self.toggle_gfx = true,
             _ => {}
         }
     }

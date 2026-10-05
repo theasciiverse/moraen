@@ -60,6 +60,15 @@ impl Zoom {
             .unwrap_or(Zoom::GLYPH)
     }
 
+    /// The biggest pixel size that shows the whole cave; 4 px (scrolling) when none
+    /// does.
+    pub fn fit_pixels(cave_w: usize, cave_h: usize, w: usize, h: usize) -> Zoom {
+        match Zoom::fit(cave_w, cave_h, w, h) {
+            Zoom::GLYPH => Zoom(4),
+            z => z,
+        }
+    }
+
     /// Which hand-drawn art set, and how many times it is scaled up.
     fn art(self) -> (i32, i32) {
         match self.0 {
@@ -477,6 +486,8 @@ mod tests {
         assert_eq!(Zoom::fit(40, 22, 80, 22), Zoom::GLYPH);
         assert_eq!(Zoom::fit(40, 22, 320, 73), Zoom(6));
         assert_eq!(Zoom::fit(40, 22, 160, 44), Zoom(4));
+        assert_eq!(Zoom::fit_pixels(40, 22, 80, 22), Zoom(4));
+        assert_eq!(Zoom::fit_pixels(40, 22, 320, 73), Zoom(6));
         assert_eq!(Zoom(4).step(-1), Zoom::GLYPH);
         assert_eq!(Zoom(24).step(1), Zoom(24));
     }
