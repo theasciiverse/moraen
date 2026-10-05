@@ -1,0 +1,20 @@
+name: Hoarfrost
+about: intermission: two moths under the stones
+value: 20 30
+quota: 8 9 10 11 12
+time: 30 27 24 21 18
+seed: 237 191 136 70 95
+intermission: yes
+grid:
+WWWWWWWWWWWWWWWWWWWW
+W:::...............W
+W:P:...............W
+W:::..r:r:r:r:.....W
+W.....r:r:r:r:.....W
+W.....r:r:r:r:.....W
+W...ww::::::::ww...W
+W...wb         w...W
+W...w wwwwwwww w...W
+W...w         bw...W
+W...wwwwwwwwwwww..XW
+WWWWWWWWWWWWWWWWWWWW

@@ -7,19 +7,20 @@ enough diamonds to open the exit, and survive the boulders, flies and amoeba whi
 the clock runs. The engine faithful to the original, everything you see our own.
 Not a clone.
 
-**Status:** build step 1 done (2026-10-05): the BD1 engine with every BD1 element,
-34 `cargo test`s of its rules, the glyph renderer, keyboard and gamepad input, session
-logging, and one cave of our own (`caves/01-first-thaw.txt`) played through the five
-difficulty levels. Proposals below approved by David on 2026-10-05. Own git repo,
+**Status** (2026-10-05): the BD1 engine with every BD1 element and its rules under
+test, glyph and half-block graphics, keyboard and gamepad input, session logging,
+and the first world: 16 caves and 4 intermissions of our own, a start menu, cave
+cards, five difficulty levels. Proposals below approved by David on 2026-10-05. Own git repo,
 private at github.com/theasciiverse/moraen.
 
 ```bash
-cargo run --release                       # play (--level 1-5)
+cargo run --release                       # play (--cave 1-20 skips the menu, --level 1-5)
 cargo run --release -- --glyphs           # character graphics (--pixels: half-blocks)
 RUST_LOG=debug cargo run --release 2>moraen.log
 cargo run -- --frame 60 --moves ..RRDD    # headless: N ticks, print the screen
 cargo run -- --frame 60 --size 320x75 --ppm out.ppm   # ... or save it as an image
 cargo test
+python3 tools/design_world1.py            # redraw the first world's caves
 ```
 
 Code: `src/engine.rs` (the tick, all rules, tests), `src/cave.rs` (cave format),
@@ -159,6 +160,48 @@ so those are not "improved".
 - Input: a key press is latched until the next tick reads it, so a tap shorter
   than a tick still moves one cell (BD1 only sampled).
 
+## The first world (built 2026-10-05)
+
+Four caves then an intermission, four times, each group bringing in its elements
+alone, then paired, then mixed. Glacial names; the hero digs through what the ice
+left behind.
+
+| # | Cave | Teaches |
+|---|---|---|
+| 1 | First Thaw | dig and gather |
+| 2 | Erratic | falling and rolling: boulder pyramids on brick shelves, gems under them |
+| 3 | Drumlin | pushing: three burrows, push each stone to a pit's edge and it rolls in |
+| 4 | Kettle | fireflies in dirt-ringed hollows, stones above to drop on them |
+| i1 | Rime | quick gather along ledges |
+| 5 | Esker | butterflies in brick rings; dig the dirt roof under the stones to crush them |
+| 6 | Kame | fireflies and butterflies side by side: ash or gems |
+| 7 | Rock Flour | magic wall: a dirt shelf under a boulder field, a catch basin below |
+| 8 | Outwash | magic wall raining gems onto butterflies, fireflies below |
+| i2 | Hoarfrost | two butterflies under columns of stones |
+| 9 | Varve | amoeba in two vaults: it fills them, is enclosed, turns to gems |
+| 10 | Crevasse | amoeba loose: get the gems before it turns to stone (about 75 s) |
+| 11 | Nunatak | amoeba creeps down brick-lined channels into butterfly rings |
+| 12 | Calving | grind gems through a magic wall before the amoeba fills the basin |
+| i3 | Frost Heave | two stones, two pits |
+| 13 | Cirque | a bowl heaped with stones and gems over a firefly ring |
+| 14 | Serac | towers capped with stones, flies in the shafts between |
+| 15 | Striae | long scored lines with a fly in each, a magic basin under them |
+| 16 | Moraine | everything at once (the first test cave, renamed) |
+| i4 | Firn | amoeba closing itself in |
+
+Campaign rules (BD1's): a new game starts at cave 1, 5, 9 or 13 on any level; a
+cleared cave leads to the next; after the last, round again one level up (5 stays
+5). Entering an intermission gives a life; failing one costs nothing and play goes
+on. `cargo test` checks every cave at every level: diamonds to be had (loose ones,
+nine a butterfly, boulders over a magic wall, small amoeba pockets) are at least a
+quarter over the quota, the exit is not walled off, no fly starts within four cells
+of the inbox. Checked by simulation too: nothing falls before the hero hatches, the
+amoeba caves do what they are for (Varve and Firn enclose, Nunatak reaches its
+butterflies at about a minute, Crevasse turns at about 75 s).
+
+`tools/design_world1.py` draws the caves (exact widths, helpers for rings, kettles,
+vaults); the text files are what the game loads and can be edited by hand.
+
 ## Plans (approved 2026-10-05)
 
 **Modes**
@@ -231,8 +274,9 @@ pad becoming its own player comes with co-op.
    test cave.
 2. **Look and feel**: half-block art at 4, 6, 8 (first pass done 2026-10-05), the
    hero, a pixel-font HUD, sound.
-3. **First world**: 16 caves plus intermissions, difficulty levels, title and
-   results screens.
+3. **First world**: 16 caves plus intermissions, difficulty levels (done
+   2026-10-05, with a text start menu and cave cards); a proper title screen and
+   results screens still to come.
 4. **Import** (BDCFF, `.bd`, R'n'D) and the editor.
 5. Co-op, race over iroh, later elements, terminal worlds.
 

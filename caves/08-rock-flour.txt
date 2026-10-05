@@ -1,0 +1,31 @@
+name: Rock Flour
+about: the ice grinds stone to powder; let the wall grind it to gems
+value: 15 20
+quota: 12 15 18 21 24
+time: 150 140 130 120 110
+seed: 116 189 192 64 98
+fill: boulder 50, diamond 3
+magic: 40
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W.::::::::::::::::::::::::::::::::::::.W
+W.wmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmw.W
+W.w                                  w.W
+W.:                                  w.W
+W.wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.W
+W......................................W
+W......................................W
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

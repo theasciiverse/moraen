@@ -1212,4 +1212,104 @@ mod tests {
             }
         }
     }
+
+    /// Diamonds a cave can give at a level, roughly: loose ones, nine per
+    /// butterfly, a boulder for every one above a magic wall, and the cells of each
+    /// amoeba pocket small enough to be enclosed.
+    fn diamonds_available(w: &World) -> u32 {
+        let mut n = 0;
+        let mut magic_cols = vec![false; w.w];
+        for (i, &e) in w.cells.iter().enumerate() {
+            match e {
+                El::Diamond => n += 1,
+                El::Butterfly(_) => n += 9,
+                El::Magic => magic_cols[i % w.w] = true,
+                _ => {}
+            }
+        }
+        if w.magic_secs > 0 {
+            for (i, &e) in w.cells.iter().enumerate() {
+                let (x, y) = (i % w.w, i / w.w);
+                if e == El::Boulder && magic_cols[x] && (y + 1..w.h).any(|yy| w.at(x, yy) == El::Magic) {
+                    n += 1;
+                }
+            }
+        }
+        let mut seen = vec![false; w.cells.len()];
+        for start in 0..w.cells.len() {
+            if w.cells[start] != El::Amoeba || seen[start] {
+                continue;
+            }
+            let mut stack = vec![start];
+            let mut size = 0;
+            seen[start] = true;
+            while let Some(i) = stack.pop() {
+                size += 1;
+                for d in Dir::ALL {
+                    if let Some(j) = w.step(i, d).filter(|&j| !seen[j] && matches!(w.cells[j], El::Space | El::Dirt | El::Amoeba)) {
+                        seen[j] = true;
+                        stack.push(j);
+                    }
+                }
+            }
+            if size < w.amoeba_threshold {
+                n += size;
+            }
+        }
+        n
+    }
+
+    /// Whether the exit can be reached from the inbox at all: anything but steel,
+    /// brick and magic wall counts as passable (boulders move, flies die).
+    fn exit_reachable(w: &World) -> bool {
+        let start = w.cells.iter().position(|&e| e == El::Inbox).unwrap();
+        let mut seen = vec![false; w.cells.len()];
+        let mut stack = vec![start];
+        seen[start] = true;
+        while let Some(i) = stack.pop() {
+            if w.cells[i] == El::Outbox {
+                return true;
+            }
+            for d in Dir::ALL {
+                if let Some(j) = w.step(i, d).filter(|&j| !seen[j] && !matches!(w.cells[j], El::Steel | El::Brick | El::Magic)) {
+                    seen[j] = true;
+                    stack.push(j);
+                }
+            }
+        }
+        false
+    }
+
+    #[test]
+    fn every_cave_is_playable_at_every_level() {
+        let mut problems = Vec::new();
+        for i in 0..cave::FILES.len() {
+            let c = cave::load(i);
+            let mut line = format!("{:2} {:12}", i + 1, c.name);
+            for level in 1..=5 {
+                let w = World::new(&c, level, 0);
+                let have = diamonds_available(&w);
+                let need = w.quota;
+                line += &format!(" L{level} {need:>2}/{have:<3}");
+                // slack: a quarter more than the quota, so one lost butterfly or a
+                // crushed diamond doesn't end the cave
+                if have * 4 < need * 5 {
+                    problems.push(format!("{} level {level}: {have} diamonds for a quota of {need}", c.name));
+                }
+                if !exit_reachable(&w) {
+                    problems.push(format!("{} level {level}: the exit is walled off", c.name));
+                }
+                let inbox = w.cells.iter().position(|&e| e == El::Inbox).unwrap();
+                let (ix, iy) = ((inbox % w.w) as i32, (inbox / w.w) as i32);
+                for (j, &e) in w.cells.iter().enumerate() {
+                    let (x, y) = ((j % w.w) as i32, (j / w.w) as i32);
+                    if matches!(e, El::Firefly(_) | El::Butterfly(_)) && (x - ix).abs() + (y - iy).abs() <= 4 {
+                        problems.push(format!("{} level {level}: a fly starts next to the inbox", c.name));
+                    }
+                }
+            }
+            println!("{line}");
+        }
+        assert!(problems.is_empty(), "\n{}", problems.join("\n"));
+    }
 }

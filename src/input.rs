@@ -63,6 +63,10 @@ pub struct Input {
     pad_snap: bool,
     pad_snap_latched: bool,
     stick: (f32, f32),
+    /// The stick pushed out of its dead zone, for menus.
+    stick_latched: Option<usize>,
+    /// Space or Enter (or a pad's face button) pressed since a menu last looked.
+    confirm: bool,
     /// Any press at all this frame (to end a cave after dying, skip a card).
     pub pressed: bool,
     pub quit: bool,
@@ -116,6 +120,8 @@ impl Input {
             pad_snap: false,
             pad_snap_latched: false,
             stick: (0.0, 0.0),
+            stick_latched: None,
+            confirm: false,
             pressed: false,
             quit: false,
             back: false,
@@ -169,6 +175,7 @@ impl Input {
                 if press {
                     self.snap_armed = Some(now);
                     self.pressed = true;
+                    self.confirm = true;
                 }
             }
             KeyCode::Esc if press => self.back = true,
@@ -217,6 +224,7 @@ impl Input {
                             Button::South | Button::East | Button::West | Button::North => {
                                 self.pad_snap = true;
                                 self.pad_snap_latched = true;
+                                self.confirm = true;
                             }
                             Button::Start => self.pause = true,
                             Button::Select => self.back = true,
@@ -246,12 +254,36 @@ impl Input {
                         }
                         if is && !was {
                             self.pressed = true;
+                            self.stick_latched = Some(if s.0.abs() >= s.1.abs() {
+                                if s.0 < 0.0 { 2 } else { 3 }
+                            } else if s.1 < 0.0 {
+                                0
+                            } else {
+                                1
+                            });
                         }
                     }
                     _ => {}
                 }
             }
         }
+    }
+
+    /// For menus: a fresh direction press (one per press, not per repeat) and
+    /// whether Space, Enter or a face button was pressed. Clears the latches.
+    pub fn take_menu(&mut self) -> (Option<Dir>, bool) {
+        let mut dir = None;
+        for d in 0..4 {
+            if self.keys[d].latched || self.pad_latched[d] || self.stick_latched == Some(d) {
+                dir = Some(DIRS[d]);
+            }
+            self.keys[d].latched = false;
+            self.pad_latched[d] = false;
+        }
+        self.stick_latched = None;
+        self.pad_snap_latched = false;
+        self.snap_armed = None;
+        (dir, std::mem::take(&mut self.confirm))
     }
 
     /// Read the controls for one tick of the cave, and clear the latches.

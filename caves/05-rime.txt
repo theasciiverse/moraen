@@ -1,0 +1,20 @@
+name: Rime
+about: intermission: frost on every ledge, and no time
+value: 20 30
+quota: 8 9 10 11 12
+time: 25 22 20 18 16
+seed: 130 183 14 238 127
+intermission: yes
+grid:
+WWWWWWWWWWWWWWWWWWWW
+W:::...............W
+W:P:...............W
+W:::drdrdrdrdrdrd..W
+W...wwwwwwwwwwwww..W
+W..................W
+W...drdrdrdrdrdrd..W
+W...wwwwwwwwwwwww..W
+W..................W
+W...drdrdrdrdrdrd..W
+W...wwwwwwwwwwwww.XW
+WWWWWWWWWWWWWWWWWWWW

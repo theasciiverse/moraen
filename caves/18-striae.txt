@@ -1,0 +1,31 @@
+name: Striae
+about: the ice scored the rock in long lines; something lives in each
+value: 10 20
+quota: 20 25 30 35 40
+time: 170 160 150 140 130
+seed: 92 62 229 171 122
+fill: boulder 45, diamond 5
+magic: 35
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W.....r....r....r....r....r....r.......W
+W..www:wwww:wwww:wwww:wwww:wwww:wwwww..W
+W..wf               b               w..W
+W..wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww..W
+W.....r....r....r....r....r....r.......W
+W..www:wwww:wwww:wwww:wwww:wwww:wwwww..W
+W..wb               f               w..W
+W..wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww..W
+W......................................W
+W......................................W
+W...::::::::::::::::::::::::::::::::...W
+W...wmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmw...W
+W...w                              w...W
+W...w                              :...W
+W...wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww...W
+W......................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

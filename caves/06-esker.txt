@@ -1,0 +1,30 @@
+name: Esker
+about: moths on the ridges; crush them for their sparkle
+value: 10 15
+quota: 14 18 22 26 30
+time: 150 140 130 120 110
+seed: 41 248 133 18 0
+fill: boulder 40, diamond 4
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::..r:r:r:r:.........r:r:r:r:r:......W
+W...ww::::::::ww.....ww::::::::::ww....W
+W...wb         w.....wb           w....W
+W...w wwwwwwww w.....w wwwwwwwwww w....W
+W...w         bw.....w           bw....W
+W...wwwwwwwwwwww.....wwwwwwwwwwwwww....W
+W......................................W
+W......................................W
+W......................................W
+W.........r:r:r:r:r:r:r:r:r:r..........W
+W.......ww:::::::::::::::::::ww........W
+W.......wb                    w........W
+W.......w wwwwwwwwwwwwwwwwwww w........W
+W.......w                    bw........W
+W.......wwwwwwwwwwwwwwwwwwwwwww........W
+W......................................W
+W......................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

@@ -1,0 +1,30 @@
+name: Drumlin
+about: three long burrows; shove the stones into the holes
+value: 15 20
+quota: 14 16 18 20 22
+time: 160 150 140 130 120
+seed: 121 66 189 242 33
+fill: boulder 30, diamond 6
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W...wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww....W
+W...:   r   dd r   dd r   dd r   dd....W
+W...wwwwww wwwwww wwwwww wwwwww www....W
+W......... ...... ...... ...... .......W
+W......................................W
+W......................................W
+W...wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww....W
+W...dd   r dd   r dd   r dd   r   :....W
+W...www wwwwww wwwwww wwwwww wwwwww....W
+W...... ...... ...... ...... ..........W
+W......................................W
+W......................................W
+W...wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww....W
+W...:   r   dd r   dd r   dd r   dd....W
+W...wwwwww wwwwww wwwwww wwwwww www....W
+W......... ...... ...... ...... .......W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

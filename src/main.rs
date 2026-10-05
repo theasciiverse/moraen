@@ -2,13 +2,13 @@
 //! comes down on you. A spiritual successor to the 1984 cave-digging classic, with
 //! its engine rebuilt faithfully and everything you see our own.
 //!
-//! Run: `cargo run --release [-- --level 1-5] [--glyphs | --pixels]
+//! Run: `cargo run --release [-- --cave 1-20] [--level 1-5] [--glyphs | --pixels]
 //! [--zoom g|4|6|8|12|16|18|24]` (`RUST_LOG=debug cargo run --release 2>moraen.log`
 //! for a session log). Graphics: `--glyphs` for characters, `--pixels` for
 //! half-blocks (after uXo); without either, half-blocks when the whole cave fits and
 //! characters when not. In the game `G` switches between the two, `+`/`-` change the
 //! size, `0` goes back to automatic. Without a terminal: `cargo run -- --frame N
-//! [--moves RRDD..] [--level L] [--size 80x24] [--zoom Z] [--ppm out.ppm]` plays N
+//! [--moves RRDD..] [--cave C] [--level L] [--size 80x24] [--zoom Z] [--ppm out.ppm]` plays N
 //! ticks (moves `U D L R`, `.` to wait, lowercase to snap) and prints the screen as
 //! text, or writes it as an image (one pixel per half-block).
 
@@ -48,6 +48,8 @@ fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let arg = |name: &str| args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).map(String::as_str);
     let level = arg("--level").and_then(|v| v.parse().ok()).unwrap_or(1u32).clamp(1, 5);
+    // a cave by its place in the world, 1 to 20 counting intermissions
+    let cave = arg("--cave").and_then(|v| v.parse::<usize>().ok()).map(|c| c.clamp(1, cave::FILES.len()) - 1);
     let flag = |name: &str| args.iter().any(|a| a == name);
     let mut gfx = if flag("--glyphs") {
         Gfx::Glyphs
@@ -64,9 +66,9 @@ fn main() -> io::Result<()> {
     }
     if let Some(n) = arg("--frame") {
         let size = arg("--size").and_then(|s| s.split_once('x')).and_then(|(w, h)| Some((w.parse().ok()?, h.parse().ok()?)));
-        return frame_dump(n.parse().unwrap_or(0), arg("--moves").unwrap_or(""), level, size.unwrap_or((80, 24)), (gfx, zoom), arg("--ppm"));
+        return frame_dump(n.parse().unwrap_or(0), arg("--moves").unwrap_or(""), cave.unwrap_or(0), level, size.unwrap_or((80, 24)), (gfx, zoom), arg("--ppm"));
     }
-    run(level, (gfx, zoom))
+    run(cave, level, (gfx, zoom))
 }
 
 fn seed() -> u64 {
@@ -84,15 +86,27 @@ enum Gfx {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum State {
+    /// The start menu: where to begin and at which level.
+    Menu,
+    /// The cave's name card, for a number of frames.
+    Card(u32),
     Playing,
     /// Leftover seconds counting into the score.
     Bonus,
     GameOver,
 }
 
+/// Frames a cave's name card stays up (a press skips it).
+const CARD_FRAMES: u32 = 110;
+
 /// A run through the caves: lives, score, difficulty level.
 struct Session {
+    /// Which cave of the world, 0 to 19.
+    index: usize,
     cave: Cave,
+    /// The menu's choices: a start from `cave::STARTS`, and the level.
+    menu_start: usize,
+    menu_level: u32,
     level: u32,
     lives: u32,
     score: u32,
@@ -116,12 +130,23 @@ struct Session {
 }
 
 impl Session {
-    fn new(level: u32, seed: u64) -> Session {
-        let cave = cave::load(0);
+    /// A session at the start menu.
+    fn menu(level: u32) -> Session {
+        let mut s = Session::new(0, level, seed());
+        s.state = State::Menu;
+        s.menu_level = level;
+        s
+    }
+
+    fn new(index: usize, level: u32, seed: u64) -> Session {
+        let cave = cave::load(index);
         let world = World::new(&cave, level, seed);
         let n = world.cells.len();
         let mut s = Session {
+            index,
             cave,
+            menu_start: 0,
+            menu_level: level,
             level,
             lives: LIVES,
             score: 0,
@@ -142,7 +167,26 @@ impl Session {
             toast: None,
         };
         s.start(seed);
+        s.state = State::Card(CARD_FRAMES);
         s
+    }
+
+    /// Go to cave `index` (wrapping to the next level after the last one) and show
+    /// its card. Entering an intermission is worth a life.
+    fn enter(&mut self, index: usize) {
+        if index >= cave::FILES.len() {
+            self.level = (self.level + 1).min(5);
+            info!("round the world again, level {}", self.level);
+        }
+        self.index = index % cave::FILES.len();
+        self.cave = cave::load(self.index);
+        self.start(seed());
+        self.state = State::Card(CARD_FRAMES);
+        if self.cave.intermission && self.lives < MAX_LIVES {
+            self.lives += 1;
+            self.toast = Some(("BONUS LIFE".into(), 120));
+            info!("bonus life for the intermission: {}", self.lives);
+        }
     }
 
     /// (Re)start the cave at the current level.
@@ -214,13 +258,17 @@ impl Session {
             self.score_changed();
             return;
         }
-        self.level = (self.level + 1).min(5);
-        info!("on to level {}", self.level);
-        self.start(seed());
+        info!("cave {} done, on to the next", self.index + 1);
+        self.enter(self.index + 1);
     }
 
-    /// A press after dying or running out of time.
+    /// A press after dying or running out of time. Failing an intermission costs
+    /// nothing: play goes on to the next cave.
     fn retry(&mut self) {
+        if self.cave.intermission {
+            info!("intermission failed, on to the next cave");
+            return self.enter(self.index + 1);
+        }
         self.lives = self.lives.saturating_sub(1);
         if self.lives == 0 {
             self.state = State::GameOver;
@@ -242,9 +290,19 @@ impl Session {
         match self.state {
             State::GameOver => {
                 if pressed {
-                    let (gfx, zoom) = (self.gfx, self.zoom);
-                    *self = Session::new(1, seed());
-                    (self.gfx, self.zoom) = (gfx, zoom);
+                    self.to_menu();
+                    input.take_menu();
+                }
+                return;
+            }
+            State::Menu => return self.menu_input(input),
+            State::Card(n) => {
+                if n == 0 || pressed {
+                    input.take_menu();
+                    self.state = State::Playing;
+                    self.acc_ms = 0.0;
+                } else {
+                    self.state = State::Card(n - 1);
                 }
                 return;
             }
@@ -272,10 +330,86 @@ impl Session {
         }
     }
 
+    /// Back to the start menu, keeping the graphics settings and the last choices.
+    fn to_menu(&mut self) {
+        let (gfx, zoom, start, level) = (self.gfx, self.zoom, self.menu_start, self.menu_level);
+        *self = Session::menu(level);
+        (self.gfx, self.zoom, self.menu_start) = (gfx, zoom, start);
+        info!("start menu");
+    }
+
+    fn menu_input(&mut self, input: &mut Input) {
+        let (dir, go) = input.take_menu();
+        match dir {
+            Some(Dir::Up) => self.menu_start = (self.menu_start + cave::STARTS.len() - 1) % cave::STARTS.len(),
+            Some(Dir::Down) => self.menu_start = (self.menu_start + 1) % cave::STARTS.len(),
+            Some(Dir::Left) => self.menu_level = (self.menu_level - 1).max(1),
+            Some(Dir::Right) => self.menu_level = (self.menu_level + 1).min(5),
+            None => {}
+        }
+        if go {
+            let (gfx, zoom, start, level) = (self.gfx, self.zoom, self.menu_start, self.menu_level);
+            info!("new game at {} level {}", cave::label(cave::STARTS[start]), level);
+            *self = Session::new(cave::STARTS[start], level, seed());
+            (self.gfx, self.zoom, self.menu_start, self.menu_level) = (gfx, zoom, start, level);
+        }
+    }
+
+    fn draw_menu(&self, area: Rect, buf: &mut Buffer) {
+        let amber = Style::new().fg(AMBER).add_modifier(Modifier::BOLD);
+        let green = Style::new().fg(GREEN);
+        let dim = Style::new().fg(DIM);
+        let mid = |s: &str| area.x + area.width.saturating_sub(s.chars().count() as u16) / 2;
+        let top = area.y + area.height.saturating_sub(16) / 2;
+        let line = |buf: &mut Buffer, dy: u16, s: &str, st: Style| {
+            if top + dy < area.y + area.height {
+                buf.set_string(mid(s), top + dy, s, st);
+            }
+        };
+        line(buf, 0, "M O R A E N", amber);
+        line(buf, 2, "dig the till, gather the gems, get out", dim);
+        line(buf, 4, "START AT", dim);
+        for (k, &i) in cave::STARTS.iter().enumerate() {
+            let c = cave::load(i);
+            let sel = k == self.menu_start;
+            let s = format!("{} {:<8} {:<12}{}", if sel { ">" } else { " " }, cave::label(i), c.name.to_uppercase(), if sel { "<" } else { " " });
+            line(buf, 5 + k as u16, &s, if sel { amber } else { green });
+        }
+        line(buf, 10, &format!("LEVEL  < {} >", self.menu_level), amber);
+        line(buf, 13, "up/down where   left/right level   Space or Enter to dig", dim);
+        line(buf, 14, "G graphics   Esc quit", dim);
+    }
+
+    fn draw_card(&self, area: Rect, buf: &mut Buffer) {
+        let amber = Style::new().fg(AMBER).add_modifier(Modifier::BOLD);
+        let green = Style::new().fg(GREEN);
+        let dim = Style::new().fg(DIM);
+        let mid = |s: &str| area.x + area.width.saturating_sub(s.chars().count() as u16) / 2;
+        let y = area.y + area.height.saturating_sub(7) / 2;
+        let rows: [(String, Style); 5] = [
+            (cave::label(self.index), dim),
+            (self.cave.name.to_uppercase(), amber),
+            (self.cave.about.clone(), green),
+            (format!("level {}   {} diamonds   {} seconds   {} men", self.level, self.world.quota, self.world.time_left, self.lives), dim),
+            (self.toast.as_ref().map_or(String::new(), |t| t.0.clone()), amber),
+        ];
+        for (k, (s, st)) in rows.iter().enumerate() {
+            let dy = [0, 2, 4, 6, 8][k];
+            if y + dy < area.y + area.height {
+                buf.set_string(mid(s), y + dy, s, *st);
+            }
+        }
+    }
+
     fn draw(&mut self, area: Rect, buf: &mut Buffer) {
         buf.set_style(area, Style::new().bg(Color::Black));
         if area.height < 3 || area.width < 20 {
             return;
+        }
+        match self.state {
+            State::Menu => return self.draw_menu(area, buf),
+            State::Card(_) => return self.draw_card(area, buf),
+            _ => {}
         }
         self.frames += 1;
         let (room_w, room_h) = (area.width as usize, area.height as usize - 2);
@@ -327,7 +461,7 @@ impl Session {
         put(" MEN ", dim);
         put(&self.lives.to_string(), green);
         put(&format!(" L{}", self.level), dim);
-        let name = format!(" {}", self.cave.name.to_uppercase());
+        let name = format!(" {} {}", cave::label(self.index), self.cave.name.to_uppercase());
         let right = (x0 + cave_area.width).saturating_sub(name.chars().count() as u16);
         if right > x {
             buf.set_string(right, hud_y, &name, amber);
@@ -444,7 +578,7 @@ fn centred(area: Rect, w: u16, h: u16) -> Rect {
     Rect::new(x, y, w.min(area.width), h.min(area.height - 2))
 }
 
-fn run(level: u32, (gfx, zoom): (Gfx, Option<Zoom>)) -> io::Result<()> {
+fn run(cave: Option<usize>, level: u32, (gfx, zoom): (Gfx, Option<Zoom>)) -> io::Result<()> {
     let mut terminal = ratatui::init();
     let kitty = supports_keyboard_enhancement().unwrap_or(false);
     if kitty {
@@ -453,7 +587,10 @@ fn run(level: u32, (gfx, zoom): (Gfx, Option<Zoom>)) -> io::Result<()> {
     }
     info!("start: kitty keyboard = {kitty}, level {level}");
     let mut input = Input::new(kitty);
-    let mut session = Session::new(level, seed());
+    let mut session = match cave {
+        Some(i) => Session::new(i, level, seed()),
+        None => Session::menu(level),
+    };
     (session.gfx, session.zoom) = (gfx, zoom);
     let mut last = Instant::now();
     let mut last_log = Instant::now();
@@ -466,8 +603,15 @@ fn run(level: u32, (gfx, zoom): (Gfx, Option<Zoom>)) -> io::Result<()> {
             }
         }
         input.poll_pads();
-        if input.quit || std::mem::take(&mut input.back) {
+        if input.quit {
             break Ok(());
+        }
+        // Esc: out of a game to the menu, and from the menu out of the game
+        if std::mem::take(&mut input.back) {
+            if session.state == State::Menu {
+                break Ok(());
+            }
+            session.to_menu();
         }
         if std::mem::take(&mut input.pause) && session.state == State::Playing {
             session.paused = !session.paused;
@@ -508,8 +652,9 @@ fn run(level: u32, (gfx, zoom): (Gfx, Option<Zoom>)) -> io::Result<()> {
 }
 
 /// Play `n` ticks headless and print the screen as plain text.
-fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16), (gfx, zoom): (Gfx, Option<Zoom>), ppm: Option<&str>) -> io::Result<()> {
-    let mut s = Session::new(level, 1);
+fn frame_dump(n: u64, moves: &str, cave: usize, level: u32, (w, h): (u16, u16), (gfx, zoom): (Gfx, Option<Zoom>), ppm: Option<&str>) -> io::Result<()> {
+    let mut s = Session::new(cave, level, 1);
+    s.state = State::Playing;
     (s.gfx, s.zoom) = (gfx, zoom);
     s.curtain_round = CURTAIN_ROUNDS + 1;
     let mut moves = moves.chars();
@@ -562,4 +707,49 @@ fn frame_dump(n: u64, moves: &str, level: u32, (w, h): (u16, u16), (gfx, zoom): 
         println!("{}", line.trim_end());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn caves_follow_in_order_and_intermissions_give_a_life() {
+        let mut s = Session::new(3, 1, 1);
+        assert_eq!(s.lives, LIVES);
+        s.enter(4);
+        assert!(s.cave.intermission);
+        assert_eq!(s.lives, LIVES + 1, "entering an intermission is worth a life");
+        assert!(matches!(s.state, State::Card(_)));
+    }
+
+    #[test]
+    fn failing_an_intermission_costs_nothing() {
+        let mut s = Session::new(4, 1, 1);
+        let lives = s.lives;
+        s.retry();
+        assert_eq!(s.index, 5, "on to the next cave");
+        assert_eq!(s.lives, lives);
+        // a normal cave costs a life and is played again
+        s.retry();
+        assert_eq!((s.index, s.lives), (5, lives - 1));
+    }
+
+    #[test]
+    fn after_the_last_cave_the_world_starts_again_one_level_up() {
+        let mut s = Session::new(19, 2, 1);
+        s.enter(20);
+        assert_eq!((s.index, s.level), (0, 3));
+        let mut s = Session::new(19, 5, 1);
+        s.enter(20);
+        assert_eq!(s.level, 5, "five stays five");
+    }
+
+    #[test]
+    fn the_last_life_lost_is_game_over() {
+        let mut s = Session::new(0, 1, 1);
+        s.lives = 1;
+        s.retry();
+        assert_eq!(s.state, State::GameOver);
+    }
 }

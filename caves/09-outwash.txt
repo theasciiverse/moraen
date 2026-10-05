@@ -1,0 +1,31 @@
+name: Outwash
+about: gems rain into the moths below; mind the embers
+value: 10 15
+quota: 20 24 28 32 36
+time: 160 150 140 130 120
+seed: 16 219 247 7 105
+fill: boulder 30, diamond 6
+magic: 30
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::....rrrrrrrrrrrrrrrrrrrrrr.........W
+W.......rrrrrrrrrrrrrrrrrrrrrr.........W
+W.......rrrrrrrrrrrrrrrrrrrrrr.........W
+W......................................W
+W.....::::::::::::::::::::::::::::.....W
+W....wmmmmmmmmmmmmmmmmmmmmmmmmmmmmw....W
+W....w                            w....W
+W....w  b                     b   w....W
+W....w                            :....W
+W....wwwwwwwwwwwwwwwwwwwwwwwwwwwwww....W
+W......................................W
+W..::::::::................::::::::....W
+W..:f     :....::::::::....:f     :....W
+W..:      :....:f     :....:      :....W
+W..:      :....:      :....:      :....W
+W..::::::::....:      :....::::::::....W
+W..............::::::::................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

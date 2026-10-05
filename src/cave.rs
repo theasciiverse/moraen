@@ -116,7 +116,39 @@ pub struct Cave {
     pub grid: Vec<Vec<Tile>>,
 }
 
-pub const FILES: [&str; 1] = [include_str!("../caves/01-first-thaw.txt")];
+/// The first world, in play order: four caves, then an intermission, four times.
+pub const FILES: [&str; 20] = [
+    include_str!("../caves/01-first-thaw.txt"),
+    include_str!("../caves/02-erratic.txt"),
+    include_str!("../caves/03-drumlin.txt"),
+    include_str!("../caves/04-kettle.txt"),
+    include_str!("../caves/05-rime.txt"),
+    include_str!("../caves/06-esker.txt"),
+    include_str!("../caves/07-kame.txt"),
+    include_str!("../caves/08-rock-flour.txt"),
+    include_str!("../caves/09-outwash.txt"),
+    include_str!("../caves/10-hoarfrost.txt"),
+    include_str!("../caves/11-varve.txt"),
+    include_str!("../caves/12-crevasse.txt"),
+    include_str!("../caves/13-nunatak.txt"),
+    include_str!("../caves/14-calving.txt"),
+    include_str!("../caves/15-frost-heave.txt"),
+    include_str!("../caves/16-cirque.txt"),
+    include_str!("../caves/17-serac.txt"),
+    include_str!("../caves/18-striae.txt"),
+    include_str!("../caves/19-moraine.txt"),
+    include_str!("../caves/20-firn.txt"),
+];
+
+/// Where a new game may start: the first cave after each intermission.
+pub const STARTS: [usize; 4] = [0, 5, 10, 15];
+
+/// "CAVE 7" or "INTERMISSION 2": caves and intermissions are counted apart.
+pub fn label(i: usize) -> String {
+    let i = i % FILES.len();
+    let inter = (0..=i).filter(|&j| load(j).intermission).count();
+    if load(i).intermission { format!("INTERMISSION {inter}") } else { format!("CAVE {}", i + 1 - inter) }
+}
 
 pub fn load(i: usize) -> Cave {
     parse(FILES[i % FILES.len()]).unwrap_or_else(|e| panic!("cave {}: {e}", i + 1))
@@ -249,6 +281,20 @@ mod tests {
             assert!(!c.name.is_empty());
             assert!(c.quotas.iter().all(|&q| q > 0), "{}: a quota of zero", c.name);
             assert!(c.times.iter().all(|&t| t > 0), "{}: no time", c.name);
+        }
+    }
+
+    #[test]
+    fn the_world_runs_four_caves_then_an_intermission() {
+        for i in 0..FILES.len() {
+            assert_eq!(load(i).intermission, i % 5 == 4, "{}", load(i).name);
+        }
+        assert_eq!(label(0), "CAVE 1");
+        assert_eq!(label(4), "INTERMISSION 1");
+        assert_eq!(label(5), "CAVE 5");
+        assert_eq!(label(19), "INTERMISSION 4");
+        for &s in &STARTS {
+            assert!(!load(s).intermission);
         }
     }
 

@@ -1,0 +1,30 @@
+name: Cirque
+about: a bowl of stone and gems over a ring of fire
+value: 10 15
+quota: 20 24 28 32 36
+time: 160 150 140 130 120
+seed: 185 240 246 145 213
+fill: boulder 30, diamond 8
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:.................................X.W
+W:::...................................W
+W......................................W
+W.......rrdrrdrrdrrdrrdrrdrrdrrd.......W
+W.......wdrrdrrdrrdrrdrrdrrdrrdw.......W
+W........wrdrrdrrdrrdrrdrrdrrdw........W
+W.........wrrdrrdrrdrrdrrdrrdw.........W
+W..........wdrrdrrdrrdrrdrrdw..........W
+W...........wrdrrdrrdrrdrrdw...........W
+W............wrrdrrdrrdrrdw............W
+W.............wwwwwwwwwwww.............W
+W......................................W
+W......................................W
+W...wwww:wwwww:wwwww:wwwww:wwwww:www...W
+W...wf              b              w...W
+W...w wwwwwwwwwwwwwwwwwwwwwwwwwwww w...W
+W...w                             fw...W
+W...wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww...W
+W......................................W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

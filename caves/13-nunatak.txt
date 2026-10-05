@@ -1,0 +1,31 @@
+name: Nunatak
+about: moss creeps down the channels to the moths; where they meet, gems
+value: 10 15
+quota: 16 20 24 28 32
+time: 160 150 140 130 120
+seed: 132 148 95 118 75
+fill: boulder 40, diamond 5
+amoeba: 15
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W....wwwwwwwww.............wwwwwwwww...W
+W....wb      w.............wb      w...W
+W....w       w.............w       w...W
+W....wwww:wwww.............wwww:wwww...W
+W.......w:wwwwwwwwwwwwwwwwwwwww:w......W
+W.......w:wwwwwwww:::::wwwwwwww:w......W
+W.......w:wwwwwwww:::::wwwwwwww:w......W
+W.......w:::::::::::a:::::::::::w......W
+W.......w:wwwwwwww:::::wwwwwwww:w......W
+W.......w:wwwwwwww:::::wwwwwwww:w......W
+W.......w:wwwwwwwwwwwwwwwwwwwww:w......W
+W....wwww:wwww.............wwww:wwww...W
+W....wb      w.............wb      w...W
+W....w       w.............w       w...W
+W....wwwwwwwww.............wwwwwwwww...W
+W......................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

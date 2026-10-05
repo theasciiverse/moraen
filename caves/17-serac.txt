@@ -1,0 +1,30 @@
+name: Serac
+about: towers of ice with stones on top, and things flying between
+value: 15 20
+quota: 14 18 22 25 28
+time: 160 150 140 130 120
+seed: 212 155 187 148 89
+fill: boulder 25, diamond 6
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W......................................W
+W....................................X.W
+W.....r.....r.....r.....r.....r........W
+W.....r.....r.....r.....r.....r........W
+W.....r.....r.....r.....r.....r........W
+W.....r.....r.....r.....r.....r........W
+W.....r.....r.....r.....r.....r........W
+W.....w.....w.....w.....w.....w........W
+W.....w. b .w. f .w. b .w. f .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W.....w.   .w.   .w.   .w.   .w........W
+W:::..w.....w.....w.....w.....w........W
+W:P:.dwd...dwd...dwd...dwd...dwd.......W
+W:::...................................W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

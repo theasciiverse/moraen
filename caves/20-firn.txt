@@ -1,0 +1,21 @@
+name: Firn
+about: intermission: wait for the moss to close itself in
+value: 15 20
+quota: 16 18 20 22 24
+time: 40 36 32 28 24
+seed: 22 61 102 201 177
+amoeba: 3
+intermission: yes
+grid:
+WWWWWWWWWWWWWWWWWWWW
+W:::...............W
+W:P:...............W
+W:::.....r.........W
+W....wwww:wwwww....W
+W....w::::::::w....W
+W....w:a::::::w....W
+W....w::::::::w....W
+W....w::::::::w....W
+W....wwwwwwwwww....W
+W.................XW
+WWWWWWWWWWWWWWWWWWWW

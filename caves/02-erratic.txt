@@ -1,0 +1,30 @@
+name: Erratic
+about: the ice dropped its stones wherever it liked
+value: 10 20
+quota: 12 14 16 18 20
+time: 150 140 130 120 110
+seed: 28 46 43 184 86
+fill: boulder 70, diamond 8
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::................rrrrrr.............W
+W......rrrrr.......rrrrrrrr............W
+W.....rrrrrrr.....wwwwwwwwww.....rr....W
+W....wwwwwwwww.....d.d.d.d......rrrr...W
+W.....d.d.d.d..................wwwwww..W
+W...............................d.d....W
+W.........rrrrrr.......................W
+W........rrrrrrrr.........rrrrrrr......W
+W.......wwwwwwwwww.......rrrrrrrrr.....W
+W........d.d.d.d........wwwwwwwwwww....W
+W........................d.d.d.d.d.....W
+W.....rrrr.............................W
+W....rrrrrr.......rrrrr........rrrr....W
+W...wwwwwwww.....rrrrrrr......rrrrrr...W
+W....d.d.d......wwwwwwwww....wwwwwwww..W
+W................d.d.d.d......d.d.d....W
+W......................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

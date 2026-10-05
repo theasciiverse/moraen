@@ -1,0 +1,32 @@
+name: Calving
+about: grind gems through the wall before the moss fills the basin
+value: 15 20
+quota: 12 15 18 21 24
+time: 150 140 130 120 110
+seed: 54 126 138 130 149
+fill: boulder 55, diamond 4
+magic: 45
+amoeba: 30
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W......................................W
+W......................................W
+W...::::::::::::::::::::::::::::::::...W
+W...wmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmw...W
+W...w                              w...W
+W...w                              w...W
+W...:                             aw...W
+W...wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww...W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W......................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
