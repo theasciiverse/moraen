@@ -99,8 +99,9 @@ pub enum El {
     /// magic wall.
     TrollAsleep,
     TrollFalling,
-    /// A stone troll awake: walks along the wall on its left every other tick, kills
-    /// what it touches, and throws stones down or sideways at the player. Crushed, it
+    /// A stone troll awake: too heavy to climb, it walks the ground left or right
+    /// every other tick, turning at anything in its way and dropping off ledges; it
+    /// kills what it touches and throws stones down or sideways at the player. Crushed, it
     /// bursts into boulders; daylight from the open exit turns it back to stone.
     Troll { dir: Dir, cool: u8, rest: bool },
     /// A stone a troll threw sideways: one cell a tick; it kills the player it hits
@@ -358,6 +359,13 @@ impl World {
     #[cfg(test)]
     pub fn set(&mut self, x: usize, y: usize, el: El) {
         self.cells[y * self.w + x] = el;
+    }
+
+    #[cfg(test)]
+    pub fn dir_right_for_test(&mut self, x: usize, y: usize) {
+        if let El::Troll { cool, rest, .. } = self.cells[y * self.w + x] {
+            self.cells[y * self.w + x] = El::Troll { dir: Dir::Right, cool, rest };
+        }
     }
 
     pub fn exit_open(&self) -> bool {
@@ -729,15 +737,18 @@ impl World {
             self.cells[i] = El::Troll { dir: d, cool, rest: false };
             return;
         }
-        // like a firefly: keep the wall on its left; the free turn is left
-        for go in [d.left(), d] {
-            if let Some(t) = self.step(i, go).filter(|&t| self.cells[t] == El::Space) {
+        // too heavy to climb: with nothing under it, it drops; on the ground it walks
+        // on, and turns round at anything in its way (that costs its step)
+        let fall = self.step(i, Dir::Down).filter(|&t| self.cells[t] == El::Space);
+        let walk = if d.horizontal() { d } else { Dir::Left };
+        let ahead = self.step(i, walk).filter(|&t| self.cells[t] == El::Space);
+        match fall.or(ahead) {
+            Some(t) => {
                 self.cells[i] = El::Space;
-                self.put(t, El::Troll { dir: go, cool, rest: true });
-                return;
+                self.put(t, El::Troll { dir: walk, cool, rest: true });
             }
+            None => self.cells[i] = El::Troll { dir: walk.left().left(), cool, rest: true },
         }
-        self.cells[i] = El::Troll { dir: d.right(), cool, rest: true };
     }
 
     /// Where a troll throws, if the player is straight below it or level with it,
@@ -1465,6 +1476,10 @@ mod tests {
                     if matches!(e, El::Firefly(_) | El::Butterfly(_)) && (x - ix).abs() + (y - iy).abs() <= 4 {
                         problems.push(format!("{} level {level}: a fly starts next to the inbox", c.name));
                     }
+                    // the first dig must not wake one
+                    if e == El::TrollAsleep && (x - ix).abs() + (y - iy).abs() <= 4 {
+                        problems.push(format!("{} level {level}: a troll sleeps next to the inbox", c.name));
+                    }
                 }
             }
             println!("{line}");
@@ -1541,6 +1556,25 @@ mod tests {
             w.tick(NONE);
         }
         assert!(is_troll(w.at(4, 1)), "two cells in four ticks: {:?}", w.cells);
+    }
+
+    #[test]
+    fn an_awake_troll_cannot_climb_but_drops_off_a_ledge() {
+        // a slot with space above: it stays on its floor
+        let mut w = world("WWWWW\nW:::W\nW: :W\nW: :W\nWWWWW");
+        w.set(2, 3, awake(200, false));
+        for _ in 0..8 {
+            w.tick(NONE);
+        }
+        assert!(is_troll(w.at(2, 3)), "it never climbs");
+        // off the end of a ledge it falls
+        let mut w = world("WWWWWW\nW    W\nWw   W\nW    W\nWWWWWW");
+        w.set(1, 1, awake(200, false));
+        w.dir_right_for_test(1, 1);
+        for _ in 0..10 {
+            w.tick(NONE);
+        }
+        assert!(w.cells.iter().enumerate().any(|(i, &e)| is_troll(e) && i / w.w == 3), "it reached the floor");
     }
 
     #[test]
@@ -1630,6 +1664,36 @@ mod tests {
         assert_eq!(w.at(2, 2), El::TrollAsleep);
         assert_eq!(w.magic, MagicState::Dormant);
         assert_eq!(w.at(2, 4), El::Space);
+    }
+
+
+    #[test]
+    fn a_stone_dropped_on_a_caged_troll_crushes_it_once_awake() {
+        // the caves' perch: brick ledge, troll, space, dirt, stone; dirt cages its sides
+        let grid = "WWWWWWW\nW  :  W\nW  r  W\nW P:  W\nW : : W\nW :t: W\nW  w  W\nWWWWWWW";
+        // asleep: the stone comes to rest on it (stone can't hurt stone)
+        let mut w = world(grid);
+        w.tick(snap(Dir::Right));
+        assert!(!w.events.contains(&Event::TrollWoke), "digging two above doesn't wake it");
+        for _ in 0..6 {
+            w.tick(NONE);
+        }
+        assert_eq!(w.at(3, 5), El::TrollAsleep);
+        assert!(matches!(w.at(3, 4), El::Boulder), "the stone rests on the sleeping troll");
+        // awake (the thaw): the stone crushes it, and the digger two above is safe
+        let mut w = world(grid);
+        w.troll_wake_secs = w.time_left;
+        w.tick(NONE);
+        assert!(is_troll(w.at(3, 5)) || is_troll(w.at(3, 4)));
+        w.troll_wake_secs = 0;
+        w.tick(snap(Dir::Right));
+        let mut rubble = false;
+        for _ in 0..12 {
+            w.tick(NONE);
+            rubble |= w.cells.iter().any(|e| matches!(e, El::Blast { rubble: true, .. }));
+        }
+        assert!(rubble, "crushed");
+        assert_eq!(w.phase, Phase::Playing, "and the digger lives");
     }
 
 }

@@ -123,8 +123,9 @@ pub struct Cave {
     pub grid: Vec<Vec<Tile>>,
 }
 
-/// The first world, in play order: four caves, then an intermission, four times.
-pub const FILES: [&str; 20] = [
+/// The first world, in play order: four caves, then an intermission, five times;
+/// the last group brings the stone trolls.
+pub const FILES: [&str; 25] = [
     include_str!("../caves/01-first-thaw.txt"),
     include_str!("../caves/02-erratic.txt"),
     include_str!("../caves/03-drumlin.txt"),
@@ -145,10 +146,15 @@ pub const FILES: [&str; 20] = [
     include_str!("../caves/18-striae.txt"),
     include_str!("../caves/19-moraine.txt"),
     include_str!("../caves/20-firn.txt"),
+    include_str!("../caves/21-talus.txt"),
+    include_str!("../caves/22-arete.txt"),
+    include_str!("../caves/23-tarn.txt"),
+    include_str!("../caves/24-bergschrund.txt"),
+    include_str!("../caves/25-ablation.txt"),
 ];
 
 /// Where a new game may start: the first cave after each intermission.
-pub const STARTS: [usize; 4] = [0, 5, 10, 15];
+pub const STARTS: [usize; 5] = [0, 5, 10, 15, 20];
 
 /// "CAVE 7" or "INTERMISSION 2": caves and intermissions are counted apart.
 pub fn label(i: usize) -> String {

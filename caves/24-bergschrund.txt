@@ -1,0 +1,32 @@
+name: Bergschrund
+about: the old rune-stone turns even troll rubble into gems
+value: 10 20
+quota: 16 18 20 22 24
+time: 170 160 150 140 130
+seed: 196 93 111 85 99
+fill: boulder 40, diamond 6
+magic: 30
+trolls: 70
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W......................................W
+W......................................W
+W......................................W
+W........::::..::::..::::..::::........W
+W.......::f :.::f :.::f :.::f :.:......W
+W.......r::::.r::::.r::::.r::::.r......W
+W.......:.....:.....:.....:.....:......W
+W......: :...: :...: :...: :...: :.....W
+W......:t:...:t:...:t:...:t:...:t:.....W
+W.......w.....w.....w.....w.....w......W
+W....wmmmmmmmmmmmmmmmmmmmmmmmmmmmmw....W
+W....w                            w....W
+W....w                            w....W
+W....w                            :....W
+W....w                            w....W
+W....wwwwwwwwwwwwwwwwwwwwwwwwwwwwww....W
+W.....................................XW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

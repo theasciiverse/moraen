@@ -1,0 +1,31 @@
+name: Talus
+about: some of these stones are only sleeping; never dig beside one
+value: 15 25
+quota: 12 13 14 15 16
+time: 150 140 130 120 110
+seed: 84 214 214 144 245
+fill: boulder 30, diamond 12
+trolls: 50
+grid:
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W:::...................................W
+W:P:...................................W
+W:::...................................W
+W.......................rtrrrtrrrtrr...W
+W......rtrrrtrrrtrr.....wwwwwwwwwwww...W
+W......wwwwwwwwwwww.....d..d..d..d.....W
+W......d..d..d..d......................W
+W......................................W
+W......................................W
+W...rtrrrtrrrtrrr......................W
+W...wwwwwwwwwwwww....rtrrrtrrrtrrrtr...W
+W...d..d..d..d..d....wwwwwwwwwwwwwww...W
+W....................d..d..d..d..d.....W
+W......................................W
+W......................................W
+W........rtrrrtrrrtrr.....rtrrrtrrrt...W
+W........wwwwwwwwwwww.....wwwwwwwwww...W
+W........d..d..d..d.......d..d..d..d...W
+W......................................W
+W....................................X.W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW

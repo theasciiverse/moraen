@@ -1,0 +1,21 @@
+name: Ablation
+about: intermission: the sun is up early, and so are the trolls
+value: 20 30
+quota: 8 9 10 11 12
+time: 30 26 24 22 20
+seed: 193 7 109 156 242
+trolls: 15
+intermission: yes
+grid:
+WWWWWWWWWWWWWWWWWWWW
+W:::...............W
+W:P:...............W
+W:::...............W
+W....dtdrdtdrdtdr..W
+W....wwwwwwwwwwww..W
+W..................W
+W....dtdrdtdrdtdr..W
+W....wwwwwwwwwwww..W
+W..................W
+W.....d.d.d.d.d.d.XW
+WWWWWWWWWWWWWWWWWWWW

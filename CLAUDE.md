@@ -110,8 +110,9 @@ Our own element, beyond the 1984 set (`El::TrollAsleep`, `TrollFalling`,
   seconds, default 30) or when the player **digs** a cell right next to it.
   Standing beside it or pushing it does not wake it, so pushing a sleeping troll
   is possible (and tense). Nothing wakes once the exit is open.
-- **Awake** it walks every other tick, keeping the wall on its left (the
-  firefly rule), and its touch kills; that blast leaves rubble.
+- **Awake** it is too heavy to climb: every other tick it walks the ground left
+  or right, turns round at anything in its way, and drops off ledges. Its touch
+  kills; that blast leaves rubble.
 - **It throws stones** down or sideways (never up) when the player is straight
   below it or level with it with nothing but space between, up to 12 cells, then
   waits 12 ticks. Down is a falling boulder placed under it; sideways is a
@@ -127,8 +128,16 @@ Our own element, beyond the 1984 set (`El::TrollAsleep`, `TrollFalling`,
   `the_thaw_wakes_the_trolls`, `an_awake_troll_walks_every_other_tick`,
   `a_troll_throws_*`, `a_thrown_stone_drops_*`, `a_crushed_troll_*`,
   `a_trolls_touch_*`, `daylight_*`, `a_troll_lands_on_a_magic_wall_*`.
-- Still to do: troll caves (introduced alone, then paired, then mixed), and the
-  store page, which waits until trolls are in the caves.
+- **The caves' perch** (`perched` in `tools/design_trolls.py`): a troll caged by
+  dirt on a brick ledge, open space over it, then dirt, then a stone. Dig that dirt
+  from the side once the thaw has woken the troll: two above it, digging doesn't
+  wake a sleeping one and the crush blast can't reach the digger. A stone on a
+  sleeping troll just comes to rest (`a_stone_dropped_on_a_caged_troll_*`).
+- **The troll caves** close the first world (2026-10-27), drawn by
+  `tools/design_trolls.py`: Talus (trolls alone), Arete (wait for the thaw, then
+  drop the stones), Tarn (troll rubble falls into the butterflies' pools), Bergschrund
+  (troll rubble through the rune-stone turns to gems), and the intermission Ablation
+  (an early thaw). A new game can start at cave 17.
 
 ## References and what we may take
 
@@ -209,7 +218,7 @@ so those are not "improved".
 
 ## The first world (built 2026-10-05)
 
-Four caves then an intermission, four times, each group bringing in its elements
+Four caves then an intermission, five times, each group bringing in its elements
 alone, then paired, then mixed. Glacial names; the hero digs through what the ice
 left behind.
 
@@ -235,8 +244,13 @@ left behind.
 | 15 | Striae | long scored lines with a fly in each, a magic basin under them |
 | 16 | Moraine | everything at once (the first test cave, renamed) |
 | i4 | Firn | amoeba closing itself in |
+| 17 | Talus | stone trolls alone: some of the stones are only sleeping; never dig beside one |
+| 18 | Arete | a stone over every caged troll: wait for the thaw, then let them fall |
+| 19 | Tarn | trolls over the butterflies' pools: crushed, their rubble falls in and crushes the butterflies into gems |
+| 20 | Bergschrund | trolls over the rune-stone: their rubble falls through as gems |
+| i5 | Ablation | an early thaw: grab the gems before the trolls are up |
 
-Campaign rules (BD1's): a new game starts at cave 1, 5, 9 or 13 on any level; a
+Campaign rules (BD1's): a new game starts at cave 1, 5, 9, 13 or 17 on any level; a
 cleared cave leads to the next; after the last, round again one level up (5 stays
 5). Entering an intermission gives a life; failing one costs nothing and play goes
 on. `cargo test` checks every cave at every level: diamonds to be had (loose ones,

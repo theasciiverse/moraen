@@ -737,11 +737,12 @@ mod tests {
 
     #[test]
     fn after_the_last_cave_the_world_starts_again_one_level_up() {
-        let mut s = Session::new(19, 2, 1);
-        s.enter(20);
+        let last = cave::FILES.len() - 1;
+        let mut s = Session::new(last, 2, 1);
+        s.enter(last + 1);
         assert_eq!((s.index, s.level), (0, 3));
-        let mut s = Session::new(19, 5, 1);
-        s.enter(20);
+        let mut s = Session::new(last, 5, 1);
+        s.enter(last + 1);
         assert_eq!(s.level, 5, "five stays five");
     }
 
