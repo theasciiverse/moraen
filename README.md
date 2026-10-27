@@ -1,6 +1,6 @@
 # Moraen
 
-Cave-digging action puzzle after Boulder Dash: dig, grab diamonds, dodge boulders.
+A cave-digging action puzzle: dig through the moraine the ice left behind, gather the gems, and get out before the boulders come down on you.
 
 ## Play
 
@@ -16,5 +16,5 @@ unpack it and run `./moraen`.
 
 ## Credits
 
-An original Asciiverse game after Boulder Dash (First Star Software, 1984):
-a faithful engine for its rules, with our own caves, hero and creatures.
+A love letter to the 1984 cave-digging classic: a faithful engine for its
+rules, with our own caves, hero and creatures.
