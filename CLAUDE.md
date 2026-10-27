@@ -95,8 +95,8 @@ mountain's depths, and now they are thawing.
 How the engine tells it: the exit is the old hall doors, opened by enough of the
 clan's gems; the magic wall is old dwarf rune-stone that still turns falling
 rock into gems; fireflies, butterflies and amoeba are what moved in while the
-dwarves were gone; the clock is the thaw. The hero's look should become a
-dwarf (the open "our hero" item below).
+dwarves were gone; the clock is the thaw. The hero keeps the look he has, a
+miner in a yellow helmet with a pick (David, 2026-10-27).
 
 ## The stone troll (built 2026-10-27)
 
@@ -351,7 +351,7 @@ pad becoming its own player comes with co-op.
 - [x] Folder renamed `rockford` to `moraen`
 - [x] David approves the proposals above (2026-10-05)
 - [x] Pushed to `theasciiverse/moraen` (private, 2026-10-05)
-- [ ] Our hero: look and idle animation
+- [x] Our hero: kept as drawn (David, 2026-10-27); an idle animation is still open
 - [ ] Vet the 25 public-domain Boulder levels before using any
 - [ ] Promote CAVEZ of PHEAR to the catalog
 - [ ] BD1 engine conflicts, picked for now (see Engine decisions), David to
