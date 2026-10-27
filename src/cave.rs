@@ -14,6 +14,7 @@
 //! magic: 20                magic wall seconds (optional)
 //! amoeba: 40               seconds of slow amoeba growth (optional)
 //! intermission: yes        optional; intermissions run faster
+//! trolls: 30               optional; seconds left when the thaw wakes the trolls
 //! grid:
 //! ```
 //!
@@ -23,6 +24,7 @@
 //! - `.` dirt that takes the random fill, `:` dirt that never does, space is space
 //! - `r` boulder, `d` diamond
 //! - `f` firefly (starts facing left), `b` butterfly (starts facing down), `a` amoeba
+//! - `t` a stone troll, asleep: a boulder until it wakes
 //! - `P` the inbox, where the player arrives; `X` the exit
 
 use crate::engine::{Dir, El};
@@ -40,6 +42,7 @@ pub enum Tile {
     Firefly,
     Butterfly,
     Amoeba,
+    Troll,
     Inbox,
     Exit,
 }
@@ -58,6 +61,7 @@ impl Tile {
             'f' => Tile::Firefly,
             'b' => Tile::Butterfly,
             'a' => Tile::Amoeba,
+            't' => Tile::Troll,
             'P' => Tile::Inbox,
             'X' => Tile::Exit,
             _ => return None,
@@ -76,6 +80,7 @@ impl Tile {
             "firefly" => Tile::Firefly,
             "butterfly" => Tile::Butterfly,
             "amoeba" => Tile::Amoeba,
+            "troll" => Tile::Troll,
             _ => return None,
         })
     }
@@ -92,6 +97,7 @@ impl Tile {
             Tile::Firefly => El::Firefly(Dir::Left),
             Tile::Butterfly => El::Butterfly(Dir::Down),
             Tile::Amoeba => El::Amoeba,
+            Tile::Troll => El::TrollAsleep,
             Tile::Inbox => El::Inbox,
             Tile::Exit => El::Outbox,
         }
@@ -110,6 +116,7 @@ pub struct Cave {
     pub fill: Vec<(Tile, u8)>,
     pub magic_secs: u32,
     pub amoeba_secs: u32,
+    pub troll_secs: u32,
     pub intermission: bool,
     pub w: usize,
     pub h: usize,
@@ -171,6 +178,7 @@ pub fn parse(text: &str) -> Result<Cave, String> {
         fill: Vec::new(),
         magic_secs: 0,
         amoeba_secs: 0,
+        troll_secs: crate::engine::TROLL_SECS,
         intermission: false,
         w: 0,
         h: 0,
@@ -220,6 +228,7 @@ pub fn parse(text: &str) -> Result<Cave, String> {
             }
             "magic" => cave.magic_secs = num(v)?,
             "amoeba" => cave.amoeba_secs = num(v)?,
+            "trolls" => cave.troll_secs = num(v)?,
             "intermission" => cave.intermission = v == "yes",
             _ => return Err(format!("unknown key {key:?}")),
         }

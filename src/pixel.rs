@@ -218,6 +218,43 @@ fn boulder_pal(c: char) -> Option<Rgb> {
     })
 }
 
+/// Troll stone: the boulder's shades with a touch of moss.
+fn troll_pal(c: char) -> Option<Rgb> {
+    Some(match c {
+        'h' => [206, 214, 186],
+        'l' => [170, 180, 150],
+        'm' => [130, 140, 114],
+        's' => [92, 102, 80],
+        'd' => [52, 58, 44],
+        _ => return None,
+    })
+}
+
+/// A troll's face on its boulder: sleepy slits while blinking, or awake, glowing
+/// amber eyes under a heavy brow and a scowl (the eyes glancing now and then).
+fn troll_face(cv: &mut Canvas, x0: i32, y0: i32, a: i32, k: i32, awake: bool, t: u64) {
+    let (ey, ex) = match a {
+        8 => (3, [2, 5]),
+        6 => (2, [1, 4]),
+        _ => (1, [1, 2]),
+    };
+    let eye: Rgb = if awake { [255, 176, 40] } else { [40, 44, 34] };
+    let glance = if awake && t % 6 == 0 { 1 } else { 0 };
+    for x in ex {
+        cv.block(x0 + (x + glance).min(a - 2) * k, y0 + ey * k, k, eye);
+    }
+    if awake && a >= 6 {
+        let brow: Rgb = [44, 48, 36];
+        for x in ex {
+            cv.block(x0 + x * k, y0 + (ey - 1) * k, k, brow);
+        }
+        let my = if a == 8 { 5 } else { 4 };
+        for x in ex[0]..=ex[1] {
+            cv.block(x0 + x * k, y0 + my * k, k, brow);
+        }
+    }
+}
+
 fn diamond(a: i32) -> &'static [&'static str] {
     match a {
         8 => &["........", "..hhhh..", ".hlllcc.", "hhlllccd", ".llccdd.", "..lcdd..", "...cd...", "........"],
@@ -341,8 +378,12 @@ fn amoeba(cv: &mut Canvas, x0: i32, y0: i32, a: i32, k: i32, tx: usize, ty: usiz
 
 /// A blast cell: white-hot, then fire, then embers; or a cold flash that sets into
 /// a diamond.
-fn blast(cv: &mut Canvas, x0: i32, y0: i32, a: i32, k: i32, tx: usize, ty: usize, stage: u8, diamonds: bool, t: u64) {
-    let hot: [Rgb; 4] = if diamonds {
+#[allow(clippy::too_many_arguments)]
+fn blast(cv: &mut Canvas, x0: i32, y0: i32, a: i32, k: i32, tx: usize, ty: usize, stage: u8, diamonds: bool, rubble: bool, t: u64) {
+    let hot: [Rgb; 4] = if rubble {
+        // a troll bursting: stone dust settling into boulders
+        [[240, 236, 220], [200, 194, 178], [150, 144, 130], [104, 98, 88]]
+    } else if diamonds {
         [[255, 255, 255], [220, 250, 255], [120, 220, 255], [40, 140, 210]]
     } else {
         [[255, 255, 240], [255, 230, 120], [255, 140, 40], [170, 50, 24]]
@@ -420,7 +461,17 @@ pub fn draw(world: &World, zoom: Zoom, cam: (i32, i32), area: Rect, covered: Opt
                     let on = (world.magic == MagicState::Active).then_some(frame + i as u64);
                     cv.sprite(x0, y0, k, brick(a), false, brick_pal(on));
                 }
-                El::Boulder | El::BoulderFalling => cv.sprite(x0, y0, k, boulder(a), false, boulder_pal),
+                El::Boulder | El::BoulderFalling | El::Thrown(_) => cv.sprite(x0, y0, k, boulder(a), false, boulder_pal),
+                El::TrollAsleep | El::TrollFalling => {
+                    cv.sprite(x0, y0, k, boulder(a), false, troll_pal);
+                    if crate::glyph::troll_blinks(world, i) {
+                        troll_face(&mut cv, x0, y0, a, k, false, 0);
+                    }
+                }
+                El::Troll { .. } => {
+                    cv.sprite(x0, y0, k, boulder(a), false, troll_pal);
+                    troll_face(&mut cv, x0, y0, a, k, true, frame / 4 + i as u64);
+                }
                 El::Diamond | El::DiamondFalling => {
                     let glint = (frame / 4 + i as u64 * 7) % 23 == 0;
                     cv.sprite(x0, y0, k, diamond(a), false, diamond_pal(glint));
@@ -435,7 +486,7 @@ pub fn draw(world: &World, zoom: Zoom, cam: (i32, i32), area: Rect, covered: Opt
                     cv.sprite(x0, y0, k, &hero(a, step), world.facing == Dir::Left, hero_pal);
                 }
                 El::OutboxOpen => door(&mut cv, x0, y0, a, k, t % 2 == 0),
-                El::Blast { stage, diamonds } => blast(&mut cv, x0, y0, a, k, tx, ty, stage, diamonds, t),
+                El::Blast { stage, diamonds, rubble } => blast(&mut cv, x0, y0, a, k, tx, ty, stage, diamonds, rubble, t),
             }
         }
     }

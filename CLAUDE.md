@@ -83,6 +83,53 @@ Checked 2026-10-04, not legal advice.
 - **Our own**: name, hero, creature names and looks, every cave, music and sound.
   The hero must not echo Rockford's look or his signature foot-tapping idle.
 
+## Story (2026-10-27)
+
+**Dwarf treasure, before the stone trolls wake.** When the great ice came down
+from the north, the dwarves sealed their treasure halls and fled. Ten thousand
+years later the ice has gone, leaving the moraine: rock, rubble and, underneath,
+the gems of the old halls. The hero is the youngest of the clan, sent back to
+bring the treasure home. The ice also froze the stone trolls who guard the
+mountain's depths, and now they are thawing.
+
+How the engine tells it: the exit is the old hall doors, opened by enough of the
+clan's gems; the magic wall is old dwarf rune-stone that still turns falling
+rock into gems; fireflies, butterflies and amoeba are what moved in while the
+dwarves were gone; the clock is the thaw. The hero's look should become a
+dwarf (the open "our hero" item below).
+
+## The stone troll (built 2026-10-27)
+
+Our own element, beyond the 1984 set (`El::TrollAsleep`, `TrollFalling`,
+`Troll`, `Thrown` in `src/engine.rs`; `t` in cave files, `troll` in the fill):
+
+- **Asleep it is a boulder** in every way: falls, rolls, is pushed, things roll
+  off it; it blinks now and then (art only). It never goes through a magic wall;
+  it lands on one as on rock.
+- **It wakes** when the thaw reaches it (the clock down to the cave's `trolls:`
+  seconds, default 30) or when the player **digs** a cell right next to it.
+  Standing beside it or pushing it does not wake it, so pushing a sleeping troll
+  is possible (and tense). Nothing wakes once the exit is open.
+- **Awake** it walks every other tick, keeping the wall on its left (the
+  firefly rule), and its touch kills; that blast leaves rubble.
+- **It throws stones** down or sideways (never up) when the player is straight
+  below it or level with it with nothing but space between, up to 12 cells, then
+  waits 12 ticks. Down is a falling boulder placed under it; sideways is a
+  `Thrown` stone, one cell a tick, that kills the player it hits and drops as a
+  boulder against anything else.
+- **Crushed** by a falling stone it bursts into a 3x3 heap of boulders
+  (`Blast { rubble: true }`), as a firefly bursts to space and a butterfly to
+  gems.
+- **Daylight**: when the exit opens, every awake troll turns back to stone.
+- Art: troll stone is the boulder's shades with moss; awake, amber eyes under a
+  brow and a scowl (`troll_face` in `src/pixel.rs`; `ÒÓ` in glyph mode).
+- Tests: `a_sleeping_troll_*`, `digging_next_to_a_sleeping_troll_wakes_it`,
+  `the_thaw_wakes_the_trolls`, `an_awake_troll_walks_every_other_tick`,
+  `a_troll_throws_*`, `a_thrown_stone_drops_*`, `a_crushed_troll_*`,
+  `a_trolls_touch_*`, `daylight_*`, `a_troll_lands_on_a_magic_wall_*`.
+- Still to do: troll caves (introduced alone, then paired, then mixed), and the
+  store page, which waits until trolls are in the caves.
+
 ## References and what we may take
 
 | Source | License (verified) | Use |

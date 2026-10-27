@@ -13,6 +13,10 @@ const STEEL: Color = Color::Rgb(120, 124, 136);
 const BRICK: Color = Color::Rgb(168, 72, 48);
 const DIRT: Color = Color::Rgb(122, 86, 52);
 const BOULDER: Color = Color::Rgb(190, 184, 170);
+/// Troll stone: a boulder's grey with a touch of moss; amber eyes.
+const TROLL: Color = Color::Rgb(160, 172, 140);
+const TROLL_EYE: Color = Color::Rgb(255, 176, 40);
+const TROLL_BG: Color = Color::Rgb(70, 76, 60);
 const DIAMOND: Color = Color::Rgb(90, 230, 255);
 const HERO: Color = Color::Rgb(255, 214, 64);
 const FIREFLY: Color = Color::Rgb(255, 120, 30);
@@ -56,6 +60,11 @@ fn phase(world: &World, i: usize, every: u64) -> u64 {
     world.ticks / every + i as u64 % 3
 }
 
+/// A sleeping troll opens its eyes for a moment every few seconds, each at its own time.
+pub fn troll_blinks(world: &World, i: usize) -> bool {
+    (world.ticks + i as u64 * 7) % 40 < 2
+}
+
 fn look(world: &World, i: usize) -> (&'static str, Style) {
     let s = |c: Color| Style::new().fg(c);
     let t = world.ticks;
@@ -71,7 +80,15 @@ fn look(world: &World, i: usize) -> (&'static str, Style) {
             }
             _ => ("▒▒", s(BRICK)),
         },
-        El::Boulder | El::BoulderFalling => ("()", s(BOULDER).add_modifier(Modifier::BOLD)),
+        El::Boulder | El::BoulderFalling | El::Thrown(_) => ("()", s(BOULDER).add_modifier(Modifier::BOLD)),
+        // a sleeping troll is a boulder that now and then opens its eyes
+        El::TrollAsleep | El::TrollFalling => {
+            if troll_blinks(world, i) { ("oo", s(TROLL_EYE)) } else { ("()", s(TROLL).add_modifier(Modifier::BOLD)) }
+        }
+        El::Troll { .. } => {
+            let g = ["ÒÓ", "ÓÒ"][(phase(world, i, 4) % 2) as usize];
+            (g, s(TROLL_EYE).bg(TROLL_BG).add_modifier(Modifier::BOLD))
+        }
         El::Diamond | El::DiamondFalling => {
             if phase(world, i, 2) % 4 == 0 { ("<>", s(Color::White).add_modifier(Modifier::BOLD)) } else { ("<>", s(DIAMOND)) }
         }
@@ -105,8 +122,10 @@ fn look(world: &World, i: usize) -> (&'static str, Style) {
         El::OutboxOpen => {
             if t % 2 == 0 { ("▓▓", s(Color::White).add_modifier(Modifier::BOLD)) } else { ("▓▓", s(STEEL)) }
         }
-        El::Blast { stage, diamonds } => {
-            let c = if diamonds {
+        El::Blast { stage, diamonds, rubble } => {
+            let c = if rubble {
+                [Color::White, Color::Rgb(200, 196, 180), Color::Rgb(150, 144, 130), Color::Rgb(100, 96, 88)][stage.min(3) as usize]
+            } else if diamonds {
                 [Color::White, Color::White, DIAMOND, Color::Rgb(40, 140, 200)][stage.min(3) as usize]
             } else {
                 [Color::White, Color::Rgb(255, 240, 120), Color::Rgb(255, 150, 40), Color::Rgb(200, 50, 30)][stage.min(3) as usize]
