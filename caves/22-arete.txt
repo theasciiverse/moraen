@@ -1,5 +1,5 @@
 name: Arete
-about: a stone hangs over every caged troll; wait for them to wake, then let it fall
+about: a stone hangs over every caged troll; let it fall before they wake
 value: 15 25
 quota: 14 15 16 17 18
 time: 150 140 130 120 110

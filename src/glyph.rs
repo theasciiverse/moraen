@@ -60,9 +60,23 @@ fn phase(world: &World, i: usize, every: u64) -> u64 {
     world.ticks / every + i as u64 % 3
 }
 
-/// A sleeping troll opens its eyes for a moment every few seconds, each at its own time.
+/// A sleeping troll opens its eyes for a moment every few seconds, each at its own
+/// time, and much more often when the player is getting close: the warning.
 pub fn troll_blinks(world: &World, i: usize) -> bool {
-    (world.ticks + i as u64 * 7) % 40 < 2
+    let every = if world.player_within(i, crate::engine::TROLL_SENSE + 2) { 8 } else { 40 };
+    (world.ticks + i as u64 * 7) % every < 2
+}
+
+/// A crushed troll's cry, centred over the cell at screen column `col` (the cell's
+/// left edge, `wide` columns across) and on the row above `row`.
+pub fn shout(buf: &mut Buffer, area: Rect, col: i32, row: i32, wide: i32) {
+    const OOF: &str = "OOF!";
+    let x = col + wide / 2 - OOF.len() as i32 / 2;
+    let y = row - 1;
+    if y < area.y as i32 || x < area.x as i32 || x + OOF.len() as i32 > area.right() as i32 || y >= area.bottom() as i32 {
+        return;
+    }
+    buf.set_string(x as u16, y as u16, OOF, Style::new().fg(Color::Rgb(255, 230, 120)).bg(Color::Rgb(40, 34, 24)).add_modifier(Modifier::BOLD));
 }
 
 fn look(world: &World, i: usize) -> (&'static str, Style) {

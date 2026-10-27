@@ -1,5 +1,5 @@
 name: Bergschrund
-about: the old rune-stone turns even troll rubble into gems
+about: the old rune-stone turns even a crushed troll into gems
 value: 10 20
 quota: 16 18 20 22 24
 time: 170 160 150 140 130
@@ -21,7 +21,7 @@ W.......r::::.r::::.r::::.r::::.r......W
 W.......:.....:.....:.....:.....:......W
 W......: :...: :...: :...: :...: :.....W
 W......:t:...:t:...:t:...:t:...:t:.....W
-W.......w.....w.....w.....w.....w......W
+W.......:.....:.....:.....:.....:......W
 W....wmmmmmmmmmmmmmmmmmmmmmmmmmmmmw....W
 W....w                            w....W
 W....w                            w....W

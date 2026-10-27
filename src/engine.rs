@@ -23,6 +23,10 @@ pub const TROLL_COOL: u8 = 12;
 pub const TROLL_REACH: usize = 12;
 /// Seconds left on the clock when, by default, the thaw wakes the trolls.
 pub const TROLL_SECS: u32 = 30;
+/// How close (steps across and down) the player can come before a troll wakes.
+pub const TROLL_SENSE: usize = 2;
+/// Ticks a crushed troll's "OOF!" stays up.
+pub const SHOUT_TICKS: u8 = 10;
 /// Ticks without the player in the grid before a press ends the cave (BD1: 16).
 pub const GRACE_TICKS: u32 = 16;
 /// Tick length per difficulty level, in ms: BD1's CaveDelay 12, 6, 3, 1, 0 through
@@ -95,14 +99,15 @@ pub enum El {
     Butterfly(Dir),
     Amoeba,
     /// A stone troll asleep: a boulder in every way (it falls, rolls, is pushed and
-    /// things roll off it), except that it blinks, wakes, and never goes through a
-    /// magic wall.
+    /// things roll off it), except that it blinks, wakes when the player comes close,
+    /// never goes through a magic wall, and a falling stone kills it.
     TrollAsleep,
     TrollFalling,
     /// A stone troll awake: too heavy to climb, it walks the ground left or right
     /// every other tick, turning at anything in its way and dropping off ledges; it
-    /// kills what it touches and throws stones down or sideways at the player. Crushed, it
-    /// bursts into boulders; daylight from the open exit turns it back to stone.
+    /// kills what it touches and throws stones down or sideways at the player. A falling
+    /// stone kills it ("OOF!") and leaves a plain boulder; daylight from the open exit
+    /// turns it back to stone.
     Troll { dir: Dir, cool: u8, rest: bool },
     /// A stone a troll threw sideways: one cell a tick; it kills the player it hits
     /// and drops as a boulder against anything else.
@@ -175,6 +180,7 @@ pub enum Event {
     TrollWoke,
     TrollThrew,
     TrollFroze,
+    TrollCrushed,
     Died,
     Won,
     TimeUp,
@@ -277,6 +283,8 @@ pub struct World {
     pub flash: u32,
     /// Seconds left on the clock when the thaw reaches the sleeping trolls.
     pub troll_wake_secs: u32,
+    /// Short cries over cells, ticks left to show: a crushed troll's "OOF!".
+    pub shouts: Vec<(usize, u8)>,
     pub events: Vec<Event>,
 }
 
@@ -347,6 +355,7 @@ impl World {
             unseen: 0,
             flash: 0,
             troll_wake_secs: cave.troll_secs,
+            shouts: Vec::new(),
             events: Vec::new(),
         }
     }
@@ -397,6 +406,10 @@ impl World {
             return;
         }
         self.flash = self.flash.saturating_sub(1);
+        self.shouts.retain_mut(|(_, t)| {
+            *t -= 1;
+            *t > 0
+        });
         self.moved = false;
         // the amoeba's fate is decided from last tick's count
         let amoeba_to = if self.amoeba_count_last >= self.amoeba_threshold {
@@ -550,7 +563,6 @@ impl World {
             }
             El::Dirt => {
                 self.events.push(Event::Dig);
-                self.wake_trolls_by(t);
                 if snap { self.cells[t] = El::Space } else { self.walk(i, t) }
             }
             // only a resting diamond can be picked up
@@ -617,6 +629,15 @@ impl World {
             }
             self.events.push(if obj == Obj::Boulder { Event::BoulderLand } else { Event::DiamondLand });
         }
+        // a falling stone kills a troll, asleep or awake: it's a plain boulder now
+        if falling && matches!(under, El::TrollAsleep | El::Troll { .. }) {
+            let b = below.expect("a troll is in the grid");
+            self.put(b, El::Boulder);
+            self.cells[i] = obj.resting();
+            self.shouts.push((b, SHOUT_TICKS));
+            self.events.push(Event::TrollCrushed);
+            return;
+        }
         if under.rounded() {
             if !self.roll(i, obj) {
                 self.cells[i] = obj.resting();
@@ -632,7 +653,6 @@ impl World {
             El::Player if !self.scanned[b] => self.explode(b, false, i),
             El::Firefly(_) => self.explode(b, false, i),
             El::Butterfly(_) => self.explode(b, true, i),
-            El::Troll { .. } => self.explode_into(b, Leaves::Rubble, i),
             _ => self.cells[i] = obj.resting(),
         }
     }
@@ -695,24 +715,22 @@ impl World {
         self.cells[i] = make(otherwise);
     }
 
-    /// Whether the thaw wakes a sleeping troll this tick: the clock down to the cave's
-    /// troll time. Never once the exit is open.
-    fn troll_wakes(&self, _i: usize) -> bool {
-        self.phase == Phase::Playing && !self.exit_open() && self.time_left <= self.troll_wake_secs
+    /// Whether a sleeping troll wakes this tick: the player within `TROLL_SENSE`
+    /// cells, or the thaw (the clock down to the cave's troll time). Never once the
+    /// exit is open.
+    fn troll_wakes(&self, i: usize) -> bool {
+        if self.phase != Phase::Playing || self.exit_open() {
+            return false;
+        }
+        self.time_left <= self.troll_wake_secs || self.player_within(i, TROLL_SENSE)
     }
 
-    /// Digging wakes any sleeping (resting) troll right next to the dug cell. Standing
-    /// beside one, or pushing it, does not: asleep it is just a boulder.
-    fn wake_trolls_by(&mut self, dug: usize) {
-        if self.exit_open() {
-            return;
-        }
-        for n in Dir::ALL {
-            if let Some(c) = self.step(dug, n).filter(|&c| self.cells[c] == El::TrollAsleep) {
-                self.put(c, El::Troll { dir: Dir::Left, cool: TROLL_COOL / 2, rest: true });
-                self.events.push(Event::TrollWoke);
-            }
-        }
+    /// Whether the player is within `n` steps (across and down) of cell `i`.
+    pub fn player_within(&self, i: usize, n: usize) -> bool {
+        self.player.is_some_and(|p| {
+            let (px, py, x, y) = (p % self.w, p / self.w, i % self.w, i / self.w);
+            px.abs_diff(x) + py.abs_diff(y) <= n
+        })
     }
 
     fn troll(&mut self, i: usize, d: Dir, cool: u8, rest: bool) {
@@ -1516,29 +1534,6 @@ mod tests {
     }
 
     #[test]
-    fn a_sleeping_troll_is_pushed_without_waking() {
-        let mut w = world("WWWWWWW\nWPt   W\nWWWWWWW");
-        let mut woke = false;
-        for _ in 0..60 {
-            w.tick(go(Dir::Right));
-            woke |= w.events.contains(&Event::TrollWoke);
-            if w.at(3, 1) == El::TrollAsleep {
-                break;
-            }
-        }
-        assert_eq!(w.at(3, 1), El::TrollAsleep, "pushed one cell");
-        assert!(!woke);
-    }
-
-    #[test]
-    fn digging_next_to_a_sleeping_troll_wakes_it() {
-        let mut w = world("WWWWWW\nWP.t W\nWWWWWW");
-        w.tick(go(Dir::Right));
-        assert!(w.events.contains(&Event::TrollWoke));
-        assert!(is_troll(w.at(3, 1)));
-    }
-
-    #[test]
     fn the_thaw_wakes_the_trolls() {
         let mut w = world("WWWWW\nW t W\nWWWWW");
         w.tick(NONE);
@@ -1616,20 +1611,6 @@ mod tests {
     }
 
     #[test]
-    fn a_crushed_troll_bursts_into_boulders() {
-        let mut w = world("WWWWW\nW r W\nW   W\nWW WW\nWWWWW");
-        w.set(2, 3, awake(200, true));
-        let mut rubble = false;
-        for _ in 0..12 {
-            w.tick(NONE);
-            rubble |= w.cells.iter().any(|e| matches!(e, El::Blast { rubble: true, .. }));
-        }
-        assert!(rubble);
-        let stones = w.cells.iter().filter(|e| matches!(e, El::Boulder | El::BoulderFalling)).count();
-        assert!(stones >= 3, "{stones} boulders left");
-    }
-
-    #[test]
     fn a_trolls_touch_kills_and_leaves_rubble() {
         let mut w = world("WWWWWW\nW P  W\nWWWWWW");
         w.set(3, 1, awake(200, true));
@@ -1667,32 +1648,49 @@ mod tests {
     }
 
 
+
+
     #[test]
-    fn a_stone_dropped_on_a_caged_troll_crushes_it_once_awake() {
-        // the caves' perch: brick ledge, troll, space, dirt, stone; dirt cages its sides
-        let grid = "WWWWWWW\nW  :  W\nW  r  W\nW P:  W\nW : : W\nW :t: W\nW  w  W\nWWWWWWW";
-        // asleep: the stone comes to rest on it (stone can't hurt stone)
-        let mut w = world(grid);
+    fn coming_close_wakes_a_sleeping_troll() {
+        let mut w = world("WWWWWWWW\nWP   t W\nWWWWWWWW");
+        w.tick(NONE);
+        assert_eq!(w.at(5, 1), El::TrollAsleep, "four away: asleep");
+        w.tick(go(Dir::Right));
+        w.tick(NONE);
+        assert_eq!(w.at(5, 1), El::TrollAsleep, "three away: still asleep");
+        w.tick(go(Dir::Right));
+        w.tick(NONE);
+        assert!(is_troll(w.at(5, 1)), "two away: awake");
+    }
+
+    #[test]
+    fn a_falling_stone_kills_a_troll_and_leaves_a_boulder() {
+        for troll in [El::TrollAsleep, awake(200, true)] {
+            let mut w = world("WWWWW\nW r W\nW   W\nWW WW\nWWWWW");
+            w.set(2, 3, troll);
+            let mut crushed = false;
+            for _ in 0..6 {
+                w.tick(NONE);
+                crushed |= w.events.contains(&Event::TrollCrushed);
+                if crushed {
+                    assert_eq!(w.shouts.len(), 1, "OOF!");
+                }
+            }
+            assert!(crushed, "{troll:?}");
+            assert_eq!(w.at(2, 3), El::Boulder);
+            assert!(!w.cells.iter().any(|e| matches!(e, El::Blast { .. })), "no blast");
+        }
+    }
+
+    #[test]
+    fn the_caves_perch_crushes_a_caged_troll_from_safety() {
+        // brick ledge, troll, space, dirt, stone; dirt cages its sides
+        let mut w = world("WWWWWWW\nW  :  W\nW  r  W\nW P:  W\nW : : W\nW :t: W\nW  w  W\nWWWWWWW");
         w.tick(snap(Dir::Right));
-        assert!(!w.events.contains(&Event::TrollWoke), "digging two above doesn't wake it");
         for _ in 0..6 {
             w.tick(NONE);
         }
-        assert_eq!(w.at(3, 5), El::TrollAsleep);
-        assert!(matches!(w.at(3, 4), El::Boulder), "the stone rests on the sleeping troll");
-        // awake (the thaw): the stone crushes it, and the digger two above is safe
-        let mut w = world(grid);
-        w.troll_wake_secs = w.time_left;
-        w.tick(NONE);
-        assert!(is_troll(w.at(3, 5)) || is_troll(w.at(3, 4)));
-        w.troll_wake_secs = 0;
-        w.tick(snap(Dir::Right));
-        let mut rubble = false;
-        for _ in 0..12 {
-            w.tick(NONE);
-            rubble |= w.cells.iter().any(|e| matches!(e, El::Blast { rubble: true, .. }));
-        }
-        assert!(rubble, "crushed");
+        assert_eq!(w.at(3, 5), El::Boulder, "the troll is a plain boulder now");
         assert_eq!(w.phase, Phase::Playing, "and the digger lives");
     }
 

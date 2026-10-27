@@ -422,6 +422,10 @@ impl Session {
             self.cam.follow(w, view_w, view_h);
             let r = centred(area, (view_w * 2) as u16, view_h as u16);
             glyph::draw(w, self.cam, r, covered, buf);
+            for &(c, _) in &w.shouts {
+                let (tx, ty) = ((c % w.w) as i32 - self.cam.x as i32, (c / w.w) as i32 - self.cam.y as i32);
+                glyph::shout(buf, r, r.x as i32 + tx * 2, r.y as i32 + ty, 2);
+            }
             r
         } else {
             let px = zoom.px();
@@ -432,6 +436,11 @@ impl Session {
             let cam = self.pixel_camera(px, (cave_w, cave_h), (view_w, view_h * 2));
             let covered = (self.curtain_round <= CURTAIN_ROUNDS).then_some(self.curtain.as_slice());
             pixel::draw(&self.world, zoom, cam, r, covered, self.frames, buf);
+            let w = &self.world;
+            for &(c, _) in &w.shouts {
+                let (x, y) = ((c % w.w) as i32 * px - cam.0, (c / w.w) as i32 * px - cam.1);
+                glyph::shout(buf, r, r.x as i32 + x, r.y as i32 + y / 2, px);
+            }
             r
         };
         let w = &self.world;

@@ -103,13 +103,14 @@ dwarf (the open "our hero" item below).
 Our own element, beyond the 1984 set (`El::TrollAsleep`, `TrollFalling`,
 `Troll`, `Thrown` in `src/engine.rs`; `t` in cave files, `troll` in the fill):
 
-- **Asleep it is a boulder** in every way: falls, rolls, is pushed, things roll
-  off it; it blinks now and then (art only). It never goes through a magic wall;
-  it lands on one as on rock.
-- **It wakes** when the thaw reaches it (the clock down to the cave's `trolls:`
-  seconds, default 30) or when the player **digs** a cell right next to it.
-  Standing beside it or pushing it does not wake it, so pushing a sleeping troll
-  is possible (and tense). Nothing wakes once the exit is open.
+- **Asleep it is a boulder** in every way: falls, rolls, things roll off it; it
+  blinks now and then, and much faster once the player is within four steps (the
+  warning). It never goes through a magic wall; it lands on one as on rock.
+- **It wakes** when the player comes within two steps (`TROLL_SENSE`, across and
+  down) or the thaw reaches it (the clock down to the cave's `trolls:` seconds,
+  default 30). Nothing wakes once the exit is open. (First built as "digging right
+  next to it": David's play-test, 2026-10-27, found they never woke, because the
+  cells round a troll are rarely dirt.)
 - **Awake** it is too heavy to climb: every other tick it walks the ground left
   or right, turns round at anything in its way, and drops off ledges. Its touch
   kills; that blast leaves rubble.
@@ -118,9 +119,10 @@ Our own element, beyond the 1984 set (`El::TrollAsleep`, `TrollFalling`,
   waits 12 ticks. Down is a falling boulder placed under it; sideways is a
   `Thrown` stone, one cell a tick, that kills the player it hits and drops as a
   boulder against anything else.
-- **Crushed** by a falling stone it bursts into a 3x3 heap of boulders
-  (`Blast { rubble: true }`), as a firefly bursts to space and a butterfly to
-  gems.
+- **A falling stone kills it**, asleep or awake (David, 2026-10-27): it becomes
+  a plain boulder, no blast, and cries "OOF!" over the spot for a moment
+  (`World::shouts`, drawn by `glyph::shout` in both looks). Only its deadly touch
+  still blasts, leaving rubble (`Blast { rubble: true }`).
 - **Daylight**: when the exit opens, every awake troll turns back to stone.
 - Art: troll stone is the boulder's shades with moss; awake, amber eyes under a
   brow and a scowl (`troll_face` in `src/pixel.rs`; `ÒÓ` in glyph mode).
@@ -129,15 +131,16 @@ Our own element, beyond the 1984 set (`El::TrollAsleep`, `TrollFalling`,
   `a_troll_throws_*`, `a_thrown_stone_drops_*`, `a_crushed_troll_*`,
   `a_trolls_touch_*`, `daylight_*`, `a_troll_lands_on_a_magic_wall_*`.
 - **The caves' perch** (`perched` in `tools/design_trolls.py`): a troll caged by
-  dirt on a brick ledge, open space over it, then dirt, then a stone. Dig that dirt
-  from the side once the thaw has woken the troll: two above it, digging doesn't
-  wake a sleeping one and the crush blast can't reach the digger. A stone on a
-  sleeping troll just comes to rest (`a_stone_dropped_on_a_caged_troll_*`).
+  dirt on a ledge, open space over it, then dirt, then a stone. Dig that dirt from
+  the side: three steps from the troll it stays asleep, and the stone kills it
+  (`the_caves_perch_crushes_a_caged_troll_from_safety`). On a dirt ledge (Tarn,
+  Bergschrund) dig under the boulder it leaves to drop it on a butterfly or
+  through the rune-stone.
 - **The troll caves** close the first world (2026-10-27), drawn by
-  `tools/design_trolls.py`: Talus (trolls alone), Arete (wait for the thaw, then
-  drop the stones), Tarn (troll rubble falls into the butterflies' pools), Bergschrund
-  (troll rubble through the rune-stone turns to gems), and the intermission Ablation
-  (an early thaw). A new game can start at cave 17.
+  `tools/design_trolls.py`: Talus (trolls alone), Arete (drop the stones before
+  they wake), Tarn (crushed trolls dropped on the butterflies' pools), Bergschrund
+  (crushed trolls through the rune-stone turn to gems), and the intermission
+  Ablation (an early thaw). A new game can start at cave 17.
 
 ## References and what we may take
 
@@ -245,9 +248,9 @@ left behind.
 | 16 | Moraine | everything at once (the first test cave, renamed) |
 | i4 | Firn | amoeba closing itself in |
 | 17 | Talus | stone trolls alone: some of the stones are only sleeping; never dig beside one |
-| 18 | Arete | a stone over every caged troll: wait for the thaw, then let them fall |
-| 19 | Tarn | trolls over the butterflies' pools: crushed, their rubble falls in and crushes the butterflies into gems |
-| 20 | Bergschrund | trolls over the rune-stone: their rubble falls through as gems |
+| 18 | Arete | a stone over every caged troll: drop them before the trolls wake |
+| 19 | Tarn | trolls over the butterflies' pools: crush them, then drop the boulders they leave on the butterflies |
+| 20 | Bergschrund | trolls over the rune-stone: crushed, they fall through as gems |
 | i5 | Ablation | an early thaw: grab the gems before the trolls are up |
 
 Campaign rules (BD1's): a new game starts at cave 1, 5, 9, 13 or 17 on any level; a

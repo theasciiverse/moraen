@@ -23,13 +23,12 @@ class C:
     def kettle(s, x, y, w, h, fly):
         # a pocket of space ringed by dirt that never takes the fill; the fly at its top left
         s.rect(x-1, y-1, w+2, h+2, ':'); s.rect(x, y, w, h, ' '); s.p(x, y, fly)
-    def perched(s, x, y):
-        # a troll caged on a brick ledge, open space over it, then dirt, then a stone
-        # (dirt that never takes the fill). Once the thaw has woken the troll, dig that
-        # dirt from the side: it is two above the troll, so digging doesn't wake a
-        # sleeping one and the troll's blast can't reach the digger. A stone dropped on
-        # a sleeping troll just comes to rest on it.
-        s.p(x, y+1, 'w'); s.p(x, y, 't'); s.p(x, y-1, ' '); s.p(x, y-2, ':'); s.p(x, y-3, 'r'); s.p(x, y-4, ':')
+    def perched(s, x, y, floor='w'):
+        # a troll caged on a ledge, open space over it, then dirt, then a stone (dirt
+        # that never takes the fill). Dig that dirt from the side: three steps from the
+        # troll, so it stays asleep, and the stone comes down and kills it ("OOF!"),
+        # leaving a plain boulder. On a dirt floor, dig under that boulder next.
+        s.p(x, y+1, floor); s.p(x, y, 't'); s.p(x, y-1, ' '); s.p(x, y-2, ':'); s.p(x, y-3, 'r'); s.p(x, y-4, ':')
         for dx in (-1, 1):
             s.p(x+dx, y, ':'); s.p(x+dx, y-1, ':')
     def save(s, name, file, **kw):
@@ -69,7 +68,7 @@ for y in (7, 13, 19):
         c.perched(x, y - 1)
         c.p(x + 2, y - 1, 'd')
 c.p(38, 10, 'X')
-c.save('Arete', '22-arete.txt', about='a stone hangs over every caged troll; wait for them to wake, then let it fall',
+c.save('Arete', '22-arete.txt', about='a stone hangs over every caged troll; let it fall before they wake',
        value='15 25', quota='14 15 16 17 18', time='150 140 130 120 110', seed=seeds(22),
        fill='boulder 24, diamond 10', trolls=60)
 
@@ -78,10 +77,10 @@ c.nook(2, 2)
 for x in (8, 18, 28):
     c.kettle(x, 13, 4, 3, 'b')
     # a caged troll on the pool's roof, a stone hanging over it
-    c.perched(x+1, 11)
+    c.perched(x+1, 11, ':')
 c.h(4, 18, 32, 'w')
 c.p(37, 20, 'X')
-c.save('Tarn', '23-tarn.txt', about='crush a troll over a pool, and its rubble wakes the moths below',
+c.save('Tarn', '23-tarn.txt', about='crush the trolls over the pools, then drop what is left of them on the moths',
        value='10 20', quota='18 20 22 24 26', time='160 150 140 130 120', seed=seeds(23),
        fill='boulder 26, diamond 6', trolls=60)
 
@@ -92,11 +91,11 @@ c.rect(6, 15, 28, 4, ' ')
 c.h(5, 19, 30, 'w'); c.v(5, 14, 5, 'w'); c.v(34, 14, 5, 'w')
 c.p(34, 17, ':')  # the way into the basin
 for x in range(8, 33, 6):
-    c.perched(x, 12)
+    c.perched(x, 12, ':')
 for x in range(10, 33, 6):
     c.kettle(x, 8, 2, 1, 'f')
 c.p(38, 20, 'X')
-c.save('Bergschrund', '24-bergschrund.txt', about='the old rune-stone turns even troll rubble into gems',
+c.save('Bergschrund', '24-bergschrund.txt', about='the old rune-stone turns even a crushed troll into gems',
        value='10 20', quota='16 18 20 22 24', time='170 160 150 140 130', seed=seeds(24),
        fill='boulder 40, diamond 6', magic=30, trolls=70)
 
