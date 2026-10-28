@@ -27,3 +27,7 @@ unpack it and run `./moraen`.
 
 A love letter to the 1984 cave-digging classic: a faithful engine for its
 rules, with our own caves, hero and creatures.
+
+## Licence
+
+MIT; see [LICENSE](LICENSE).
