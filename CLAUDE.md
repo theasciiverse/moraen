@@ -7,11 +7,12 @@ enough diamonds to open the exit, and survive the boulders, flies and amoeba whi
 the clock runs. The engine faithful to the original, everything you see our own.
 Not a clone.
 
-**Status** (2026-10-05): the BD1 engine with every BD1 element and its rules under
+**Status** (2026-10-28): the BD1 engine with every BD1 element and its rules under
 test, glyph and half-block graphics, keyboard and gamepad input, session logging,
-and the first world: 16 caves and 4 intermissions of our own, a start menu, cave
+and the first world: 20 caves and 5 intermissions of our own (the stone trolls since 2026-10-27), a start menu, cave
 cards, five difficulty levels. Proposals below approved by David on 2026-10-05. Own git repo,
 private at github.com/theasciiverse/moraen.
+Version 0.4.0 (2026-10-28). What comes next, release by release, is in `ROADMAP.md`.
 
 ```bash
 cargo run --release                       # play (--cave 1-20 skips the menu, --level 1-5)
