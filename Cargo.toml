@@ -1,6 +1,6 @@
 [package]
 name = "moraen"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 license = "MIT"
 
@@ -8,7 +8,7 @@ license = "MIT"
 ratatui = "0.30"
 log = "0.4"
 env_logger = "0.11"
-gilrs = { version = "0.11", optional = true }
+gilrs = { version = "0.11", optional = true, default-features = false, features = ["xinput"] }
 
 [features]
 default = ["gamepad"]

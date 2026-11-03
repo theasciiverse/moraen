@@ -12,6 +12,12 @@ is playable; the rest of the approved plan (2026-10-05) is still to build.
 - [x] The first world: 20 caves and 5 intermissions, the stone trolls in the
   last four, five difficulty levels, a start menu and cave cards
 
+## 0.4.1: built
+
+- [x] Gamepads work on Windows: gilrs reads them through XInput, since its
+  default (Windows Gaming Input) only reports to a program with a focused
+  window of its own, which a terminal game never has
+
 ## 0.5.0: look and feel
 
 - [ ] Sound and music, our own
